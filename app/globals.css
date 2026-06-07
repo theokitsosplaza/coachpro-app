@@ -1,0 +1,173 @@
+@import "tailwindcss";
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CSS Custom Properties
+   Two layers coexist here:
+   - LEGACY tokens (--background, --accent, --success …) keep every existing
+     page compiling without a single class change.
+   - DESIGN SYSTEM v2 tokens (--bg, --surface-*, --status-*, --macro-* …)
+     are the new authoritative layer that future pages and components will
+     migrate to over time.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Legacy tokens (light-mode defaults) ────────────────────────────── */
+  --background:        #f8f9fb;
+  --foreground:        #0f1419;
+  --card:              #ffffff;
+  --card-foreground:   #0f1419;
+  --muted:             #f1f3f6;
+  --muted-foreground:  #5c6570;
+  --border:            #e2e6ec;
+  --sidebar:           #0f1419;
+  --sidebar-foreground:#e8eaed;
+  --sidebar-muted:     #8b939e;
+  --sidebar-accent:    #1e2630;
+  --sidebar-active:    #2d3748;
+  --accent:            #2563eb;
+  --accent-foreground: #ffffff;
+  --success:           #059669;
+  --success-muted:     #ecfdf5;
+  --warning:           #d97706;
+  --warning-muted:     #fffbeb;
+  --anomaly:           #dc2626;
+  --anomaly-muted:     #fef2f2;
+  --copilot-glow:      #3b82f6;
+  --ring:              #2563eb;
+
+  /* ── Design System v2 — surfaces (warm graphite, layered for depth) ── */
+  --bg:        #0B0C0E;
+  --surface-1: #131417;
+  --surface-2: #191B1F;
+  --surface-3: #232629;
+
+  /* ── Design System v2 — borders ─────────────────────────────────────── */
+  --border-strong: #3A3E43;
+
+  /* ── Design System v2 — text roles ─────────────────────────────────── */
+  --text-primary:   #F4F5F6;
+  --text-secondary: #A8ADB4;
+  --text-muted-ds:  #6E747C;   /* suffix avoids clash with legacy --muted */
+
+  /* ── Design System v2 — accent extensions ───────────────────────────── */
+  --accent-hover: #6A93FF;
+  --accent-press: #3A66E0;
+  --accent-soft:  rgba(77, 124, 254, 0.12);
+  --accent-ring:  rgba(77, 124, 254, 0.45);
+
+  /* ── Design System v2 — status palette (client triage only) ─────────── */
+  --status-green:      #34D399;
+  --status-green-soft: rgba(52,  211, 153, 0.12);
+  --status-amber:      #FBBF24;
+  --status-amber-soft: rgba(251, 191, 36,  0.12);
+  --status-red:        #FB7185;
+  --status-red-soft:   rgba(251, 113, 133, 0.12);
+  --status-grey:       #6E747C;
+  --status-grey-soft:  rgba(110, 116, 124, 0.12);
+
+  /* ── Design System v2 — macro identity colors ───────────────────────── */
+  --macro-protein: #4D7CFE;
+  --macro-carbs:   #34D399;
+  --macro-fats:    #FBBF24;
+
+  /* ── Design System v2 — border radii ────────────────────────────────── */
+  --radius-sm:   8px;
+  --radius:      12px;
+  --radius-lg:   16px;
+  --radius-pill: 999px;
+
+  /* ── Design System v2 — elevation shadows ───────────────────────────── */
+  --shadow-card: 0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 24px rgba(0,0,0,0.45);
+  --shadow-pop:  0 12px 40px rgba(0,0,0,0.55);
+}
+
+/* ── Tailwind utility mappings ────────────────────────────────────────────
+   @theme inline = "don't emit separate :root properties; inline these
+   values directly into the generated utility classes".
+   ────────────────────────────────────────────────────────────────────── */
+@theme inline {
+  /* Legacy colors — keep every existing bg-*, text-*, border-* working */
+  --color-background:      var(--background);
+  --color-foreground:      var(--foreground);
+  --color-card:            var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted:           var(--muted);
+  --color-muted-foreground:var(--muted-foreground);
+  --color-border:          var(--border);
+  --color-sidebar:         var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted:   var(--sidebar-muted);
+  --color-sidebar-accent:  var(--sidebar-accent);
+  --color-sidebar-active:  var(--sidebar-active);
+  --color-accent:          var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success:         var(--success);
+  --color-success-muted:   var(--success-muted);
+  --color-warning:         var(--warning);
+  --color-warning-muted:   var(--warning-muted);
+  --color-anomaly:         var(--anomaly);
+  --color-anomaly-muted:   var(--anomaly-muted);
+  --color-copilot-glow:    var(--copilot-glow);
+  --color-ring:            var(--ring);
+
+  /* Design System v2 colors — new utility classes */
+  --color-bg:              var(--bg);          /* bg-bg            */
+  --color-surface-1:       var(--surface-1);   /* bg-surface-1     */
+  --color-surface-2:       var(--surface-2);   /* bg-surface-2     */
+  --color-surface-3:       var(--surface-3);   /* bg-surface-3     */
+  --color-border-strong:   var(--border-strong);/* border-border-strong */
+  --color-secondary:       var(--text-secondary);/* text-secondary  */
+  --color-accent-hover:    var(--accent-hover); /* text-accent-hover */
+  --color-accent-press:    var(--accent-press); /* bg-accent-press  */
+  --color-accent-soft:     var(--accent-soft);  /* bg-accent-soft   */
+  --color-accent-ring:     var(--accent-ring);  /* bg-accent-ring   */
+  --color-status-green:      var(--status-green);      /* text-status-green      */
+  --color-status-green-soft: var(--status-green-soft); /* bg-status-green-soft   */
+  --color-status-amber:      var(--status-amber);      /* text-status-amber      */
+  --color-status-amber-soft: var(--status-amber-soft); /* bg-status-amber-soft   */
+  --color-status-red:        var(--status-red);        /* text-status-red        */
+  --color-status-red-soft:   var(--status-red-soft);   /* bg-status-red-soft     */
+  --color-status-grey:       var(--status-grey);       /* text-status-grey       */
+  --color-status-grey-soft:  var(--status-grey-soft);  /* bg-status-grey-soft    */
+  --color-macro-protein:   var(--macro-protein); /* text-macro-protein  */
+  --color-macro-carbs:     var(--macro-carbs);   /* text-macro-carbs    */
+  --color-macro-fats:      var(--macro-fats);    /* text-macro-fats     */
+
+  /* Typography — next/font exposes these as CSS vars on <html>;
+     @theme wires them into Tailwind's font-sans / font-display / font-mono
+     utility classes at runtime via var() references.            */
+  --font-sans:    var(--font-body);     /* font-sans    → Hanken Grotesk   */
+  --font-display: var(--font-display);  /* font-display → Bricolage Grotesque */
+  --font-mono:    var(--font-mono);     /* font-mono    → JetBrains Mono   */
+}
+
+/* ── Dark-mode overrides for legacy tokens ───────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background:       #0a0c10;
+    --foreground:       #f0f2f5;
+    --card:             #141820;
+    --card-foreground:  #f0f2f5;
+    --muted:            #1a1f28;
+    --muted-foreground: #9aa3af;
+    --border:           #252b36;
+    --sidebar:          #080a0d;
+    --sidebar-foreground:#e8eaed;
+    --sidebar-muted:    #6b7280;
+    --sidebar-accent:   #141820;
+    --sidebar-active:   #1e2630;
+    --accent:           #3b82f6;
+    --success-muted:    #052e1f;
+    --warning-muted:    #422006;
+    --anomaly-muted:    #450a0a;
+  }
+}
+
+/* ── Base body styles ─────────────────────────────────────────────────────── */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  /* Use the new body font (Hanken Grotesk) when next/font has loaded it;
+     fall back gracefully so the page never renders without a font. */
+  font-family: var(--font-body, system-ui, sans-serif);
+}

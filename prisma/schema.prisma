@@ -1,0 +1,112 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 1. The Coach (Master Account)
+model Coach {
+  id        String          @id @default(cuid())
+  email     String          @unique
+  name      String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  // Relations
+  clients   Client[]
+  events    CalendarEvent[]
+}
+
+// 2. The Client (Roster)
+model Client {
+  id            String         @id @default(cuid())
+  coachId       String
+  coach         Coach          @relation(fields: [coachId], references: [id])
+  name          String
+  goal          String
+  currentPhase  String
+  targetProtein Int
+  targetCarbs   Int
+  targetFats    Int
+  email         String?
+  phone         String?
+  targetFiber   Int?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Relations
+  programs      Program[]
+  workoutLogs   WorkoutLog[]   
+  checkIns      CheckIn[]
+  macroHistory  MacroHistory[]
+}
+
+// 3. The Program (The Blueprint)
+model Program {
+  id              String   @id @default(cuid())
+  clientId        String
+  client          Client   @relation(fields: [clientId], references: [id])
+  name            String   
+  mesocycleLength Int      
+  createdAt       DateTime @default(now())
+}
+
+// 4. Execution Logging 
+model WorkoutLog {
+  id          String   @id @default(cuid())
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id])
+  date        DateTime @default(now())
+  splitType   String   
+  workoutData String   
+  notes       String?  
+}
+
+// 5. The Check-In 
+model CheckIn {
+  id            String   @id @default(cuid())
+  clientId      String
+  date          DateTime @default(now())
+  
+  weight        Float
+  sleepScore    Int      
+  fatigueScore  Int      
+  
+  loggedProtein Int
+  loggedCarbs   Int
+  loggedFats    Int
+
+  aiSynthesis   String?
+  status        String   @default("Pending")
+  cycleAffected Boolean  @default(false)
+
+  client        Client   @relation(fields: [clientId], references: [id])
+}
+
+// 6. Macro Versioning 
+model MacroHistory {
+  id           String   @id @default(cuid())
+  clientId     String
+  protein      Int
+  carbs        Int
+  fats         Int
+  changeReason String?  
+  changedAt    DateTime @default(now())
+
+  client       Client   @relation(fields: [clientId], references: [id])
+}
+
+// 7. Calendar Events 
+model CalendarEvent {
+  id        String   @id @default(cuid())
+  coachId   String
+  title     String
+  eventType String   
+  startTime DateTime
+  endTime   DateTime
+
+  coach     Coach    @relation(fields: [coachId], references: [id])
+}
