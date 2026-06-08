@@ -522,7 +522,7 @@ export default async function ClientProfilePage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {client.checkIns.map((ci) => (
+                {client.checkIns.map((ci: NonNullable<typeof client>['checkIns'][number]) => (
                   <tr
                     key={ci.id}
                     className="transition-colors hover:bg-muted/30"

@@ -48,7 +48,7 @@ export default async function DashboardPage() {
       id: c.id, name: c.name, goal: c.goal, currentPhase: c.currentPhase,
       targetProtein: c.targetProtein, targetCarbs: c.targetCarbs, targetFats: c.targetFats,
     };
-    const checkInInputs: CheckInInput[] = c.checkIns.map((ci) => ({
+    const checkInInputs: CheckInInput[] = c.checkIns.map((ci: (typeof c.checkIns)[number]) => ({
       id: ci.id, date: ci.date, weight: ci.weight, sleepScore: ci.sleepScore,
       fatigueScore: ci.fatigueScore, loggedProtein: ci.loggedProtein,
       loggedCarbs: ci.loggedCarbs, loggedFats: ci.loggedFats,
@@ -116,7 +116,7 @@ export default async function DashboardPage() {
     take: 5,
     include: { client: { select: { id: true, name: true } } },
   });
-  const recentCheckIns = recentRaw.map((ci) => ({
+  const recentCheckIns = recentRaw.map((ci: (typeof recentRaw)[number]) => ({
     checkInId: ci.id,
     id: ci.client.id,
     name: ci.client.name,

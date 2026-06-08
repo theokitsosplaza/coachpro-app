@@ -76,7 +76,7 @@ export default async function TriagePage() {
         targetFats: c.targetFats,
       };
 
-      const checkInInputs: CheckInInput[] = c.checkIns.map((ci) => ({
+      const checkInInputs: CheckInInput[] = c.checkIns.map((ci: (typeof c.checkIns)[number]) => ({
         id: ci.id,
         date: ci.date,
         weight: ci.weight,
