@@ -5,6 +5,7 @@ import { verifyCoachSession } from '@/lib/dal'
 import { analyzeClient } from '@/lib/coach-engine'
 import type { Triage, Severity } from '@/lib/coach-engine'
 import { cn } from '@/lib/utils'
+import { InviteButton } from './InviteButton'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -392,6 +393,12 @@ export default async function ClientProfilePage({
                 <div className="flex items-center gap-2 text-sm">
                   <span className="w-12 shrink-0 text-muted-foreground">Phone</span>
                   <span className="text-foreground">{client.phone}</span>
+                </div>
+              )}
+              {client.email && (
+                <div className="flex items-center justify-between border-t border-border/50 pt-2">
+                  <span className="text-sm text-muted-foreground">Portal</span>
+                  <InviteButton clientId={client.id} isInvited={!!client.authUserId} />
                 </div>
               )}
             </div>

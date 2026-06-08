@@ -26,6 +26,7 @@ model Client {
   id            String         @id @default(cuid())
   coachId       String
   coach         Coach          @relation(fields: [coachId], references: [id])
+  authUserId    String?        @unique   // Supabase auth.users.id (UUID) — set on invite
   name          String
   goal          String
   currentPhase  String

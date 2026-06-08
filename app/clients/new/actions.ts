@@ -97,10 +97,23 @@ export async function updateClient(
   const result = parseAndValidate(formData)
   if (result.errors) return result.errors
 
+  // Fetch current email before writing so we can detect a change.
+  // The coachId in the where clause also enforces ownership.
+  const current = await prisma.client.findUnique({
+    where: { id: clientId, coachId: coach.id },
+    select: { email: true },
+  })
+  if (!current) return { _form: 'Client not found.' }
+
+  // If the email address changed, clear authUserId so the client must be
+  // re-invited at the new address before portal access is restored.
+  const emailChanged = result.data.email !== current.email
+  const updateData = emailChanged ? { ...result.data, authUserId: null } : result.data
+
   try {
     await prisma.client.update({
       where: { id: clientId, coachId: coach.id },
-      data: result.data,
+      data: updateData,
     })
   } catch (err) {
     console.error('[updateClient]', err)
