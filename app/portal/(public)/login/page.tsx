@@ -31,7 +31,7 @@ function PortalLoginForm() {
       email,
       options: {
         shouldCreateUser: false,
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/confirm`,
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/portal/auth-callback`,
       },
     })
 

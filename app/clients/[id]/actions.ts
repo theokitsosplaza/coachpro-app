@@ -44,7 +44,7 @@ export async function inviteClient(
     // Resend — user already exists; send a fresh magic link via PKCE flow.
     // signInWithOtp with shouldCreateUser: false sends a token_hash link that
     // the server-side /api/auth/confirm route handles correctly.
-    const resendRedirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/confirm`
+    const resendRedirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/portal/auth-callback`
     const supabase = await createClient()
     const { error } = await supabase.auth.signInWithOtp({
       email: client.email,

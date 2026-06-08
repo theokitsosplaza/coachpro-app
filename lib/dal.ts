@@ -18,6 +18,25 @@ import { prisma } from '@/lib/prisma';
  * Returns the full Coach record so callers have coach.id available for
  * coachId-scoped Prisma queries.
  */
+export const verifyClientSession = cache(async () => {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.getClaims();
+
+  if (error || !data) {
+    redirect('/portal/login');
+  }
+
+  const client = await prisma.client.findUnique({
+    where: { authUserId: data.claims.sub },
+  });
+
+  if (!client) {
+    redirect('/portal/login');
+  }
+
+  return client;
+});
+
 export const verifyCoachSession = cache(async () => {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getClaims();
