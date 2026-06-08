@@ -31,7 +31,7 @@ export default async function TriagePage() {
       orderBy: { name: 'asc' },
     });
 
-    rows = clients.map((c) => {
+    rows = clients.map((c: (typeof clients)[number]) => {
       const hasCheckIns = c.checkIns.length > 0;
 
       // ── Grey: never submitted ──────────────────────────────────────────────

@@ -68,7 +68,7 @@ export async function GET() {
       targetFats:    row.targetFats,
     };
 
-    const checkInInputs: CheckInInput[] = row.checkIns.map((c) => ({
+    const checkInInputs: CheckInInput[] = row.checkIns.map((c: (typeof row.checkIns)[number]) => ({
       id:            c.id,
       date:          c.date,
       weight:        c.weight,
