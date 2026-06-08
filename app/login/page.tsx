@@ -1,0 +1,124 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Dumbbell, Loader2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
+
+const inputBase =
+  "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground " +
+  "placeholder:text-muted-foreground/50 transition-colors " +
+  "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent " +
+  "disabled:opacity-50";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, setIsPending] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setIsPending(true);
+
+    const form = e.currentTarget;
+    const email = (form.elements.namedItem("email") as HTMLInputElement).value;
+    const password = (form.elements.namedItem("password") as HTMLInputElement).value;
+
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      setError(error.message);
+      setIsPending(false);
+      return;
+    }
+
+    router.push("/");
+    router.refresh();
+  }
+
+  return (
+    <main className="min-h-screen bg-bg flex items-center justify-center p-4">
+      <div className="w-full max-w-sm">
+
+        {/* Brand */}
+        <div className="mb-8 text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-accent mb-4">
+            <Dumbbell className="w-6 h-6 text-accent-foreground" strokeWidth={2.5} />
+          </div>
+          <h1 className="font-display text-xl font-semibold text-foreground tracking-tight">
+            CoachPro
+          </h1>
+          <p className="mt-1 text-sm text-secondary">Sign in to your dashboard</p>
+        </div>
+
+        {/* Form card */}
+        <div
+          className="bg-surface-2 border border-border-strong rounded-2xl p-6"
+          style={{ boxShadow: "var(--shadow-card)" }}
+        >
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label
+                htmlFor="email"
+                className="block mb-1.5 text-sm font-medium text-foreground"
+              >
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                placeholder="you@example.com"
+                className={inputBase}
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="block mb-1.5 text-sm font-medium text-foreground"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                placeholder="••••••••"
+                className={inputBase}
+              />
+            </div>
+
+            {error && (
+              <p className="text-sm text-status-red bg-status-red-soft rounded-lg px-3 py-2">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isPending}
+              className={cn(
+                "w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2.5",
+                "bg-accent text-accent-foreground text-sm font-semibold",
+                "hover:opacity-90 active:opacity-80 transition-opacity",
+                "disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              )}
+            >
+              {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isPending ? "Signing in…" : "Sign in"}
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </main>
+  );
+}

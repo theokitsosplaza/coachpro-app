@@ -1,0 +1,44 @@
+import { createServerClient } from "@supabase/ssr";
+import { type NextRequest, NextResponse } from "next/server";
+
+export async function proxy(request: NextRequest) {
+  // Must be initialized here so setAll can close over it and reassign.
+  let supabaseResponse = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          // 1. Forward updated cookies onto the outgoing request object so
+          //    any downstream Server Component sees the refreshed token.
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          // 2. Rebuild the response so the updated cookies reach the browser.
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  // Validates JWT signature and refreshes expired tokens.
+  // IMPORTANT: must be awaited before returning supabaseResponse.
+  await supabase.auth.getClaims();
+
+  return supabaseResponse;
+}
+
+export const config = {
+  matcher: [
+    // Run on all routes except Next.js internals and static files.
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
+};

@@ -10,9 +10,11 @@ import {
   Settings,
   Dumbbell,
   AlertTriangle,
+  LogOut,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { logout } from "@/app/actions/auth";
 
 type NavItem = {
   id: string;
@@ -109,13 +111,22 @@ export function Sidebar({ activeItem }: SidebarProps) {
 
       <div className="border-t border-sidebar-accent p-4">
         <div className="flex items-center gap-3 rounded-lg bg-sidebar-accent px-3 py-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-active text-xs font-semibold">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-active text-xs font-semibold">
             TC
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">Theo Coach</p>
             <p className="truncate text-xs text-sidebar-muted">Pro plan</p>
           </div>
+          <form action={logout}>
+            <button
+              type="submit"
+              title="Sign out"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-sidebar-muted hover:bg-sidebar-active hover:text-sidebar-foreground transition-colors"
+            >
+              <LogOut className="h-3.5 w-3.5" strokeWidth={2} />
+            </button>
+          </form>
         </div>
       </div>
     </aside>
