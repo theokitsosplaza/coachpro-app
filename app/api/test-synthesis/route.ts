@@ -4,6 +4,8 @@ import { analyzeClient, type ClientInput, type CheckInInput } from '@/lib/coach-
 import { generateCoachOutput } from '@/lib/ai-coach';
 import { createClient } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic'
+
 // ===========================================================================
 // GET /api/test-synthesis
 // ---------------------------------------------------------------------------
