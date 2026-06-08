@@ -3,7 +3,8 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
-import { createCheckIn, type CheckInFormErrors } from "../actions";
+import { createCheckIn } from "../actions";
+import type { CheckInFormErrors } from "@/lib/check-in-validation";
 import { cn } from "@/lib/utils";
 
 type LastCheckIn = {

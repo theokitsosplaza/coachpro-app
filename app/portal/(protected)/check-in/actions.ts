@@ -2,35 +2,26 @@
 
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
-import { verifyCoachSession } from '@/lib/dal'
+import { verifyClientSession } from '@/lib/dal'
 import { validateCheckInFormData } from '@/lib/check-in-validation'
 import type { CheckInFormErrors } from '@/lib/check-in-validation'
 
-export async function createCheckIn(
-  clientId: string,
+export async function submitClientCheckIn(
   _prev: CheckInFormErrors,
   formData: FormData,
 ): Promise<CheckInFormErrors> {
-  const coach = await verifyCoachSession()
+  // clientId is derived entirely from the verified session — never from form data
+  const client = await verifyClientSession()
 
   const result = validateCheckInFormData(formData)
   if (!result.ok) return result.errors
 
   const { weight, loggedProtein, loggedCarbs, loggedFats, sleepScore, fatigueScore, cycleAffected } = result
 
-  // Verify the client belongs to the authenticated coach before writing.
-  const client = await prisma.client.findUnique({
-    where: { id: clientId, coachId: coach.id },
-    select: { id: true },
-  })
-  if (!client) {
-    return { _form: 'Client not found.' }
-  }
-
   try {
     await prisma.checkIn.create({
       data: {
-        clientId,
+        clientId: client.id,
         weight,
         loggedProtein,
         loggedCarbs,
@@ -42,10 +33,9 @@ export async function createCheckIn(
       },
     })
   } catch (err) {
-    console.error('[createCheckIn]', err)
-    return { _form: 'Something went wrong saving to the database. Please try again.' }
+    console.error('[submitClientCheckIn]', err)
+    return { _form: 'Something went wrong — please try again.' }
   }
 
-  // redirect throws — must be outside try/catch
-  redirect(`/ai-check-ins?clientId=${clientId}`)
+  redirect('/portal')
 }
