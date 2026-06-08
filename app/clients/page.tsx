@@ -25,7 +25,7 @@ export default async function ClientsPage() {
       </div>
       
       <div className="grid gap-4">
-        {roster.map((client) => (
+        {roster.map((client: (typeof roster)[number]) => (
           <Link href={`/clients/${client.id}`} key={client.id} className="block">
             <div className="p-6 border border-gray-800 bg-black/50 rounded-xl shadow-sm hover:border-gray-600 hover:bg-gray-900 transition-all cursor-pointer">
               <div className="flex justify-between items-start">
