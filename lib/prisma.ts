@@ -6,12 +6,9 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-const databaseUrl = process.env.DATABASE_URL || "postgresql://postgres:NlolGGE1*@db.jmyggqphjuufqcjxvzvb.supabase.co:5432/postgres"
-
-// The Fix: Forcing SSL so Supabase actually answers the door
-const pool = new Pool({ 
-  connectionString: databaseUrl,
-  ssl: { rejectUnauthorized: false }
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
 })
 
 const adapter = new PrismaPg(pool)

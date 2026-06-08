@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { analyzeClient, type ClientInput, type CheckInInput } from "@/lib/coach-engine";
 import { OVERDUE_DAYS } from "@/lib/triage-constants";
 import { DashboardClient, type DashboardData, type AttentionClient } from "./DashboardClient";
+import { verifyCoachSession } from "@/lib/dal";
 
 function daysSince(d: Date) {
   return Math.floor((Date.now() - d.getTime()) / 86_400_000);
@@ -15,6 +16,8 @@ function toInitials(name: string) {
 }
 
 export default async function DashboardPage() {
+  await verifyCoachSession();
+
   // ── 1. All clients + check-ins (for triage engine) ────────────────────────
   const clients = await prisma.client.findMany({
     include: { checkIns: { orderBy: { date: "asc" } } },

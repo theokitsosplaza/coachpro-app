@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
+import { verifyCoachSession } from '@/lib/dal'
 
 export type FormErrors = {
   name?: string
@@ -69,16 +70,12 @@ export async function createClient(
   _prev: FormErrors,
   formData: FormData,
 ): Promise<FormErrors> {
+  const coach = await verifyCoachSession()
+
   const result = parseAndValidate(formData)
   if (result.errors) return result.errors
 
   try {
-    let coach = await prisma.coach.findFirst()
-    if (!coach) {
-      coach = await prisma.coach.create({
-        data: { email: 'coach@coachpro.com', name: 'Head Coach' },
-      })
-    }
     await prisma.client.create({
       data: { coachId: coach.id, ...result.data },
     })
@@ -95,12 +92,14 @@ export async function updateClient(
   _prev: FormErrors,
   formData: FormData,
 ): Promise<FormErrors> {
+  const coach = await verifyCoachSession()
+
   const result = parseAndValidate(formData)
   if (result.errors) return result.errors
 
   try {
     await prisma.client.update({
-      where: { id: clientId },
+      where: { id: clientId, coachId: coach.id },
       data: result.data,
     })
   } catch (err) {

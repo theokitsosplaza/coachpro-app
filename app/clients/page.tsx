@@ -1,8 +1,10 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
+import { verifyCoachSession } from '@/lib/dal'
 
 export default async function ClientsPage() {
-  
+  await verifyCoachSession();
+
   // 1. Fetch the live roster directly from Supabase
   const roster = await prisma.client.findMany({
     orderBy: { createdAt: 'desc' }

@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { analyzeClient, type ClientInput, type CheckInInput, type Triage } from '@/lib/coach-engine';
 import { TriageBoardClient, type TriageClientRow } from './TriageBoardClient';
 import { OVERDUE_DAYS, TRIAGE_ORDER } from '@/lib/triage-constants';
+import { verifyCoachSession } from '@/lib/dal';
 
 function daysSince(date: Date): number {
   return Math.floor((Date.now() - date.getTime()) / 86_400_000);
@@ -18,6 +19,8 @@ function initials(name: string): string {
 }
 
 export default async function TriagePage() {
+  await verifyCoachSession();
+
   let rows: TriageClientRow[] = [];
 
   try {

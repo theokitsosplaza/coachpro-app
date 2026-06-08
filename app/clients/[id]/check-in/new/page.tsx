@@ -1,12 +1,15 @@
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import { CheckInForm } from './CheckInForm'
+import { verifyCoachSession } from '@/lib/dal'
 
 export default async function NewCheckInPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
+  await verifyCoachSession();
+
   const { id } = await params
 
   const client = await prisma.client.findUnique({

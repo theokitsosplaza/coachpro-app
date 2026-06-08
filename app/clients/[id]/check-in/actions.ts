@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
+import { verifyCoachSession } from '@/lib/dal'
 
 export type CheckInFormErrors = {
   weight?: string
@@ -18,6 +19,8 @@ export async function createCheckIn(
   _prev: CheckInFormErrors,
   formData: FormData,
 ): Promise<CheckInFormErrors> {
+  const coach = await verifyCoachSession()
+
   const weightRaw    = formData.get('weight') as string
   const proteinRaw   = formData.get('loggedProtein') as string
   const carbsRaw     = formData.get('loggedCarbs') as string
@@ -49,6 +52,15 @@ export async function createCheckIn(
     errors.fatigueScore = 'Enter a score from 1 to 10.'
 
   if (Object.keys(errors).length > 0) return errors
+
+  // Verify the client belongs to the authenticated coach before writing.
+  const client = await prisma.client.findUnique({
+    where: { id: clientId, coachId: coach.id },
+    select: { id: true },
+  })
+  if (!client) {
+    return { _form: 'Client not found.' }
+  }
 
   try {
     await prisma.checkIn.create({

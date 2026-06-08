@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { analyzeClient, type ClientInput, type CheckInInput } from '@/lib/coach-engine';
 import { generateCoachOutput } from '@/lib/ai-coach';
+import { createClient } from '@/lib/supabase/server';
 
 // ===========================================================================
 // GET /api/test-synthesis
@@ -16,6 +17,12 @@ import { generateCoachOutput } from '@/lib/ai-coach';
 // ===========================================================================
 
 export async function GET() {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.getClaims();
+  if (error || !data) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
 
     // ---- 1. Load the demo client with her check-ins ------------------------

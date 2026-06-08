@@ -1,12 +1,15 @@
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import { AddClientForm } from '../../new/AddClientForm'
+import { verifyCoachSession } from '@/lib/dal'
 
 export default async function EditClientPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
+  await verifyCoachSession();
+
   const { id } = await params
   const client = await prisma.client.findUnique({ where: { id } })
   if (!client) notFound()

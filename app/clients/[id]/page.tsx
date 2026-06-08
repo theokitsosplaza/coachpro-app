@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { verifyCoachSession } from '@/lib/dal'
 import { analyzeClient } from '@/lib/coach-engine'
 import type { Triage, Severity } from '@/lib/coach-engine'
 import { cn } from '@/lib/utils'
@@ -245,6 +246,8 @@ export default async function ClientProfilePage({
 }: {
   params: Promise<{ id: string }>
 }) {
+  await verifyCoachSession();
+
   const { id: clientId } = await params
 
   const client = await prisma.client.findUnique({

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 
 // ===========================================================================
 // GET /api/seed-demo
@@ -13,6 +14,12 @@ import { prisma } from '@/lib/prisma';
 // ===========================================================================
 
 export async function GET() {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.getClaims();
+  if (error || !data) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
 
     // ---- 1. Find the first coach --------------------------------------------

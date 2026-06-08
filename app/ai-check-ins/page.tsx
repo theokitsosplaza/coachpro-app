@@ -4,6 +4,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { AICheckInsClient, type QueueClientData } from './AICheckInsClient';
+import { verifyCoachSession } from '@/lib/dal';
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -12,6 +13,8 @@ function initials(name: string): string {
 }
 
 export default async function AICheckInsPage() {
+  await verifyCoachSession();
+
   let queueClients: QueueClientData[] = [];
 
   try {

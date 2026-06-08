@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 
 // ===========================================================================
 // POST /api/checkin-approve
@@ -12,6 +13,12 @@ import { prisma } from '@/lib/prisma';
 // ===========================================================================
 
 export async function POST(request: Request) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.getClaims();
+  if (error || !data) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     // ---- 1. Parse and validate the request body --------------------------
     const body = await request.json() as {

@@ -1,6 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
+// Routes that never require authentication.
+// /api/auth is pre-stubbed for the Phase 3 magic-link callback.
+const PUBLIC_PATHS = ["/login", "/api/auth"];
+
 export async function proxy(request: NextRequest) {
   // Must be initialized here so setAll can close over it and reassign.
   let supabaseResponse = NextResponse.next({ request });
@@ -31,7 +35,19 @@ export async function proxy(request: NextRequest) {
 
   // Validates JWT signature and refreshes expired tokens.
   // IMPORTANT: must be awaited before returning supabaseResponse.
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
+
+  // Redirect unauthenticated requests away from protected routes.
+  // Runs AFTER token refresh so a valid-but-expired token is refreshed
+  // before we decide whether the user is logged in.
+  const pathname = request.nextUrl.pathname;
+  const isPublic = PUBLIC_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(p + "/")
+  );
+
+  if (!isPublic && !data) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
 
   return supabaseResponse;
 }
