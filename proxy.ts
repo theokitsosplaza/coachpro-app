@@ -2,8 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 // Routes that never require authentication.
-// /api/auth is pre-stubbed for the Phase 3 magic-link callback.
-const PUBLIC_PATHS = ["/login", "/api/auth"];
+const PUBLIC_PATHS = ["/login", "/api/auth", "/portal/login", "/portal/auth-callback"];
 
 export async function proxy(request: NextRequest) {
   // Must be initialized here so setAll can close over it and reassign.
@@ -46,7 +45,11 @@ export async function proxy(request: NextRequest) {
   );
 
   if (!isPublic && !data) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    // Portal paths land at /portal/login; all other protected paths at /login.
+    const isPortalPath = pathname === "/portal" || pathname.startsWith("/portal/");
+    return NextResponse.redirect(
+      new URL(isPortalPath ? "/portal/login" : "/login", request.url)
+    );
   }
 
   return supabaseResponse;

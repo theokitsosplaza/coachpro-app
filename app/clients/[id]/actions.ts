@@ -23,26 +23,32 @@ export async function inviteClient(
   if (!client) return { error: 'Client not found.' }
   if (!client.email) return { error: 'This client has no email address.' }
 
-  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/confirm`
-
   let authUserId = client.authUserId
 
   if (!authUserId) {
     // First invite — create the Supabase auth user and send the invite email.
+    // inviteUserByEmail uses implicit flow (tokens in URL fragment), so the
+    // redirectTo points at the client-side /portal/auth-callback handler, not
+    // the PKCE /api/auth/confirm route.
+    const inviteRedirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/portal/auth-callback`
     const admin = createAdminClient()
-    const { data, error } = await admin.auth.admin.inviteUserByEmail(client.email, { redirectTo })
+    const { data, error } = await admin.auth.admin.inviteUserByEmail(client.email, {
+      redirectTo: inviteRedirectTo,
+    })
     if (error) {
       console.error('[inviteClient]', error)
       return { error: 'Failed to send invite. Please try again.' }
     }
     authUserId = data.user.id
   } else {
-    // Resend — user already exists; send a fresh magic link to the current email.
-    // signInWithOtp with shouldCreateUser: false targets an existing user only.
+    // Resend — user already exists; send a fresh magic link via PKCE flow.
+    // signInWithOtp with shouldCreateUser: false sends a token_hash link that
+    // the server-side /api/auth/confirm route handles correctly.
+    const resendRedirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/confirm`
     const supabase = await createClient()
     const { error } = await supabase.auth.signInWithOtp({
       email: client.email,
-      options: { shouldCreateUser: false, emailRedirectTo: redirectTo },
+      options: { shouldCreateUser: false, emailRedirectTo: resendRedirectTo },
     })
     if (error) {
       console.error('[inviteClient resend]', error)
