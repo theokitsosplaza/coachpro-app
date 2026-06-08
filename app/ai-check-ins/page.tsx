@@ -27,7 +27,7 @@ export default async function AICheckInsPage() {
       orderBy: { name: 'asc' },
     });
 
-    queueClients = clients.map((c) => {
+    queueClients = clients.map((c: (typeof clients)[number]) => {
       const latest = c.checkIns[0] ?? null;
       return {
         id:          c.id,
