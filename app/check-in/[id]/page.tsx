@@ -524,7 +524,7 @@ export default function CheckInPage() {
         <div className="mx-auto flex h-14 max-w-md items-center justify-between px-5">
           <div className="flex items-center gap-2">
             <Dumbbell className="h-5 w-5 text-accent" strokeWidth={2.5} />
-            <span className="text-sm font-bold tracking-tight text-foreground">CoachPro</span>
+            <span className="text-sm font-bold tracking-tight text-foreground">Vimafy</span>
           </div>
           <span className="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent">
             Weekly check-in

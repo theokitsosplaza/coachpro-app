@@ -26,7 +26,7 @@ const jetbrains = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'CoachPro | AI Check-ins',
+  title: 'Vimafy | AI Check-ins',
   description: 'B2B fitness coaching dashboard for weekly client reviews',
 }
 

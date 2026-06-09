@@ -49,7 +49,7 @@ export default function LoginPage() {
             <Dumbbell className="w-6 h-6 text-accent-foreground" strokeWidth={2.5} />
           </div>
           <h1 className="font-display text-xl font-semibold text-foreground tracking-tight">
-            CoachPro
+            Vimafy
           </h1>
           <p className="mt-1 text-sm text-secondary">Sign in to your dashboard</p>
         </div>

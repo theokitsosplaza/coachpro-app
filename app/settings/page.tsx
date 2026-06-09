@@ -143,9 +143,9 @@ function GeneralTab() {
 
   const PROFILE_FIELDS = [
     { label: "Full name", key: "name", value: "Theo Coach" },
-    { label: "Email address", key: "email", value: "theo@coachpro.io" },
-    { label: "Business name", key: "business", value: "CoachPro Performance" },
-    { label: "Website", key: "website", value: "coachpro.io" },
+    { label: "Email address", key: "email", value: "theo@vimafy.com" },
+    { label: "Business name", key: "business", value: "Vimafy" },
+    { label: "Website", key: "website", value: "vimafy.com" },
   ] as const;
 
   return (
@@ -612,7 +612,7 @@ function BillingTab() {
             </p>
             <p>
               Billing email:{" "}
-              <span className="font-semibold text-foreground">theo@coachpro.io</span>
+              <span className="font-semibold text-foreground">theo@vimafy.com</span>
             </p>
           </div>
           <button
@@ -662,7 +662,7 @@ function NotificationsTab() {
     <div className="space-y-6">
       <SectionCard
         title="Email Notifications"
-        description="Delivered to theo@coachpro.io"
+        description="Delivered to theo@vimafy.com"
       >
         <div className="divide-y divide-border">
           <ToggleRow
@@ -762,7 +762,7 @@ export default function SettingsPage() {
           <h1 className="text-base font-bold text-foreground">Settings</h1>
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="h-1.5 w-1.5 rounded-full bg-success" />
-            CoachPro v2.4 · Pro plan
+            Vimafy · Pro plan
           </span>
         </header>
 

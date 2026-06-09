@@ -59,10 +59,7 @@ export function Sidebar({ activeItem }: SidebarProps) {
           <Dumbbell className="h-4 w-4 text-accent-foreground" strokeWidth={2.5} />
         </div>
         <div>
-          <span className="text-sm font-semibold tracking-tight">CoachPro</span>
-          <p className="text-[10px] font-medium uppercase tracking-wider text-sidebar-muted">
-            B2B Platform
-          </p>
+          <span className="text-sm font-semibold tracking-tight">Vimafy</span>
         </div>
       </div>
 
