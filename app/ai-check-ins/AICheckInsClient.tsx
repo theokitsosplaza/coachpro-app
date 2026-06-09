@@ -709,7 +709,7 @@ function AnalysisPanel({
               ) : approved ? (
                 <><CheckCircle2 className="h-4 w-4" />Approved</>
               ) : (
-                <><Send className="h-4 w-4" strokeWidth={2} />Approve &amp; Send Plan</>
+                <><Send className="h-4 w-4" strokeWidth={2} />Approve Plan</>
               )}
             </button>
           </div>
