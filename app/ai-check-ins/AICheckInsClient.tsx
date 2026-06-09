@@ -320,6 +320,8 @@ function EmptyPanel() {
 
 // ── Analysis panel ────────────────────────────────────────────────────────────
 
+type ConfirmedMacros = { protein: number; carbs: number; fats: number };
+
 function AnalysisPanel({
   data,
   onApprove,
@@ -327,12 +329,24 @@ function AnalysisPanel({
   approved,
 }: {
   data: AnalysisResult;
-  onApprove: () => void;
+  onApprove: (macros: ConfirmedMacros | null) => void;
   approving: boolean;
   approved: boolean;
 }) {
   const { clientInput, latestCheckIn, synthesis, aiOutput } = data;
   const { recommendation, flags, weight, adherence } = synthesis;
+
+  // Editable macro state — pre-filled from AI proposal, coach can adjust
+  const [editedMacros, setEditedMacros] = useState<ConfirmedMacros | null>(
+    recommendation.proposedMacros ?? null,
+  );
+
+  // Validate before enabling Approve
+  const macrosValid =
+    editedMacros === null ||
+    (Number.isFinite(editedMacros.protein) && editedMacros.protein >= 0 &&
+     Number.isFinite(editedMacros.carbs)   && editedMacros.carbs   >= 0 &&
+     Number.isFinite(editedMacros.fats)    && editedMacros.fats    >= 0);
 
   // Derive insight stat colours
   const weightColor = triageColor(synthesis.triage);
@@ -553,22 +567,52 @@ function AnalysisPanel({
                   </div>
                 </div>
 
-                {/* Proposed macros (only shown when engine produced them) */}
-                {recommendation.proposedMacros && (
-                  <div className="rounded-lg border border-border bg-muted/30 p-4">
-                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      Proposed macro update — approve to apply
+                {/* Proposed macros — editable before approving */}
+                {recommendation.proposedMacros && editedMacros && (
+                  <div className="rounded-lg border border-accent/25 bg-accent/5 p-4">
+                    <p className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                      Proposed macro update — review &amp; confirm before approving
                     </p>
-                    <div className="flex flex-wrap gap-3">
-                      {(["protein", "carbs", "fats"] as const).map((macro) => (
-                        <div key={macro} className="flex items-center gap-1.5">
-                          <span className="text-xs font-medium capitalize text-muted-foreground">{macro}:</span>
-                          <span className="text-sm font-bold tabular-nums text-foreground">
-                            {recommendation.proposedMacros![macro]} g
-                          </span>
+                    <div className="grid grid-cols-3 gap-3">
+                      {([
+                        { key: 'protein', label: 'Protein', labelColor: 'text-macro-protein', current: clientInput.targetProtein },
+                        { key: 'carbs',   label: 'Carbs',   labelColor: 'text-macro-carbs',   current: clientInput.targetCarbs },
+                        { key: 'fats',    label: 'Fats',    labelColor: 'text-macro-fats',     current: clientInput.targetFats },
+                      ] as const).map(({ key, label, labelColor, current }) => (
+                        <div key={key}>
+                          <label className={cn('mb-1.5 block text-xs font-semibold', labelColor)}>
+                            {label}
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={editedMacros[key]}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value, 10);
+                                setEditedMacros((prev) =>
+                                  prev ? { ...prev, [key]: isNaN(val) ? 0 : Math.max(0, val) } : prev,
+                                );
+                              }}
+                              disabled={approved}
+                              className="w-full rounded-lg border border-border bg-background py-2 pl-3 pr-8 text-sm font-semibold tabular-nums text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:opacity-50"
+                            />
+                            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                              g
+                            </span>
+                          </div>
+                          <p className="mt-1 text-[11px] text-muted-foreground">
+                            was {current} g
+                          </p>
                         </div>
                       ))}
                     </div>
+                    {!macrosValid && (
+                      <p className="mt-2 text-xs text-anomaly">
+                        All macro values must be 0 or greater before you can approve.
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -621,8 +665,8 @@ function AnalysisPanel({
             </button>
             <button
               type="button"
-              onClick={onApprove}
-              disabled={approving || approved || isReview}
+              onClick={() => onApprove(editedMacros)}
+              disabled={approving || approved || isReview || !macrosValid}
               className={cn(
                 "inline-flex h-10 items-center gap-2 rounded-xl px-6 text-sm font-bold",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -699,7 +743,7 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
   };
 
   // POST to approve the current check-in
-  const handleApprove = async () => {
+  const handleApprove = async (confirmedMacros: ConfirmedMacros | null) => {
     if (!analysis) return;
     setApproving(true);
     try {
@@ -707,9 +751,10 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          checkInId:     analysis.latestCheckInId,
-          coachSummary:  analysis.aiOutput.coachSummary,
-          clientMessage: analysis.aiOutput.clientMessage,
+          checkInId:      analysis.latestCheckInId,
+          coachSummary:   analysis.aiOutput.coachSummary,
+          clientMessage:  analysis.aiOutput.clientMessage,
+          confirmedMacros,
         }),
       });
       if (res.ok) {
