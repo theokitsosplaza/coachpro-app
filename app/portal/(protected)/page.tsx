@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { MessageSquare } from 'lucide-react'
 import { verifyClientSession } from '@/lib/dal'
 import { prisma } from '@/lib/prisma'
 import { CHECK_IN_STATUS } from '@/lib/check-in-status'
@@ -161,7 +162,7 @@ function WeightChart({ checkIns }: { checkIns: Array<{ date: Date; weight: numbe
 export default async function PortalPage() {
   const client = await verifyClientSession()
 
-  const [allCheckIns, latestMacros] = await Promise.all([
+  const [allCheckIns, latestMacros, latestApproved] = await Promise.all([
     prisma.checkIn.findMany({
       where: { clientId: client.id },
       orderBy: { date: 'desc' },
@@ -178,6 +179,15 @@ export default async function PortalPage() {
       where: { clientId: client.id },
       orderBy: { changedAt: 'desc' },
       select: { changedAt: true },
+    }),
+    prisma.checkIn.findFirst({
+      where: {
+        clientId: client.id,
+        status: CHECK_IN_STATUS.Approved,
+        aiSynthesis: { not: null },
+      },
+      orderBy: { date: 'desc' },
+      select: { id: true, date: true, aiSynthesis: true },
     }),
   ])
 
@@ -224,6 +234,19 @@ export default async function PortalPage() {
 
   const firstName = client.name.split(' ')[0]
 
+  let coachMessage: string | null = null
+  let coachMessageDate: Date | null = null
+  if (latestApproved?.aiSynthesis) {
+    try {
+      const parsed = JSON.parse(latestApproved.aiSynthesis)
+      const msg = parsed?.clientMessage?.trim()
+      if (msg) {
+        coachMessage = msg
+        coachMessageDate = latestApproved.date
+      }
+    } catch { /* ignore malformed JSON */ }
+  }
+
   return (
     <div className="space-y-6">
 
@@ -238,6 +261,31 @@ export default async function PortalPage() {
           {client.goal}
         </p>
       </div>
+
+      {/* ── Coach message ──────────────────────────────────────────────────── */}
+      {coachMessage && (
+        <section
+          className="rounded-2xl border border-border-strong bg-surface-2 p-5"
+          style={{ boxShadow: 'var(--shadow-card)' }}
+        >
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-accent">
+              <MessageSquare className="h-3.5 w-3.5" />
+              Message from your coach
+            </div>
+            {coachMessageDate && (
+              <span className="text-xs text-muted-foreground">
+                {coachMessageDate.toLocaleDateString('en-GB', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </span>
+            )}
+          </div>
+          <p className="text-sm leading-relaxed text-foreground/90">{coachMessage}</p>
+        </section>
+      )}
 
       {/* ── Progress ───────────────────────────────────────────────────────── */}
       {latestCheckIn && (

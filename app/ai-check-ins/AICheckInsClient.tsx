@@ -328,7 +328,7 @@ function AnalysisPanel({
   approved,
 }: {
   data: AnalysisResult;
-  onApprove: (macros: ConfirmedMacros | null) => void;
+  onApprove: (macros: ConfirmedMacros | null, message: string) => void;
   approving: boolean;
   approved: boolean;
 }) {
@@ -340,6 +340,12 @@ function AnalysisPanel({
     recommendation.proposedMacros ?? null,
   );
   const [manualEditOpen, setManualEditOpen] = useState(false);
+
+  // Editable client message — pre-filled with AI draft
+  const [editedMessage, setEditedMessage] = useState<string>(
+    aiOutput.clientMessage ?? '',
+  );
+  const messageValid = !aiOutput.clientMessage || editedMessage.trim().length > 0;
 
   // Validate before enabling Approve
   const macrosValid =
@@ -615,15 +621,35 @@ function AnalysisPanel({
                   </div>
                 )}
 
-                {/* Claude-written client message preview */}
+                {/* Client message — editable before approving */}
                 {aiOutput.clientMessage && (
                   <div className="rounded-lg border border-border bg-muted/20 p-4">
-                    <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      <MessageSquare className="h-3.5 w-3.5" />Ready-to-send client message
+                    <div className="mb-2 flex items-center justify-between gap-1.5">
+                      <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                        <MessageSquare className="h-3.5 w-3.5" />Client message — edit before approving
+                      </div>
+                      <span className="text-[10px] tabular-nums text-muted-foreground/60">
+                        {editedMessage.length}/1000
+                      </span>
                     </div>
-                    <p className="text-sm leading-relaxed text-foreground/85 italic">
-                      &ldquo;{aiOutput.clientMessage}&rdquo;
-                    </p>
+                    <textarea
+                      value={editedMessage}
+                      onChange={(e) => setEditedMessage(e.target.value)}
+                      rows={4}
+                      maxLength={1000}
+                      disabled={approved}
+                      placeholder="Write a message for the client…"
+                      className={cn(
+                        "w-full resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-sm leading-relaxed text-foreground",
+                        "placeholder:text-muted-foreground/50 transition-colors",
+                        "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent",
+                        "disabled:opacity-50",
+                        !messageValid && "border-anomaly focus:ring-anomaly/30",
+                      )}
+                    />
+                    {!messageValid && (
+                      <p className="mt-1.5 text-xs text-anomaly">Message cannot be empty.</p>
+                    )}
                   </div>
                 )}
               </div>
@@ -687,8 +713,8 @@ function AnalysisPanel({
             )}
             <button
               type="button"
-              onClick={() => onApprove(editedMacros)}
-              disabled={approving || approved || isReview || !macrosValid}
+              onClick={() => onApprove(editedMacros, editedMessage.trim())}
+              disabled={approving || approved || isReview || !macrosValid || !messageValid}
               className={cn(
                 "inline-flex h-10 items-center gap-2 rounded-xl px-6 text-sm font-bold",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -765,7 +791,7 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
   };
 
   // POST to approve the current check-in
-  const handleApprove = async (confirmedMacros: ConfirmedMacros | null) => {
+  const handleApprove = async (confirmedMacros: ConfirmedMacros | null, clientMessage: string) => {
     if (!analysis) return;
     setApproving(true);
     try {
@@ -773,9 +799,9 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          checkInId:      analysis.latestCheckInId,
-          coachSummary:   analysis.aiOutput.coachSummary,
-          clientMessage:  analysis.aiOutput.clientMessage,
+          checkInId:    analysis.latestCheckInId,
+          coachSummary: analysis.aiOutput.coachSummary,
+          clientMessage,
           confirmedMacros,
         }),
       });
