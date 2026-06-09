@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   Users,
   Sparkles,
-  Calendar,
   Settings,
   Dumbbell,
   AlertTriangle,
@@ -29,7 +28,6 @@ const NAV_ITEMS: NavItem[] = [
   { id: "clients", label: "Clients", href: "/clients", icon: Users },
   { id: "ai-checkins", label: "AI Check-ins", href: "/ai-check-ins", icon: Sparkles },
   { id: "programs", label: "Programs", href: "/programs", icon: Dumbbell },
-  { id: "calendar", label: "Calendar", href: "/calendar", icon: Calendar },
   { id: "settings", label: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -39,7 +37,6 @@ function resolveActiveItem(pathname: string, override?: string): string {
   if (pathname.startsWith("/clients")) return "clients";
   if (pathname.startsWith("/ai-check-ins")) return "ai-checkins";
   if (pathname.startsWith("/programs")) return "programs";
-  if (pathname.startsWith("/calendar")) return "calendar";
   if (pathname.startsWith("/settings")) return "settings";
   return "dashboard";
 }
