@@ -173,11 +173,14 @@ export function PortalCheckInForm({ lastCheckIn }: { lastCheckIn: LastCheckIn })
           type="submit"
           disabled={isPending}
           className={cn(
-            'w-full inline-flex items-center justify-center gap-2 rounded-xl',
-            'bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground',
-            'shadow-sm shadow-accent/20 transition-colors hover:bg-accent/90',
+            'w-full inline-flex items-center justify-center gap-2 rounded-2xl',
+            'bg-accent px-6 py-3.5 text-sm font-semibold text-accent-foreground',
+            'shadow-sm shadow-accent/20',
+            'transition-all duration-200 ease-out',
+            'hover:bg-accent-hover hover:-translate-y-0.5 hover:shadow-[0_8px_24px_var(--accent-ring)]',
+            'active:bg-accent-press active:translate-y-0 active:shadow-sm',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-            'disabled:opacity-50 disabled:cursor-not-allowed',
+            'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:bg-accent disabled:hover:shadow-sm',
           )}
         >
           {isPending ? (

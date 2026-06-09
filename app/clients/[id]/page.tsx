@@ -520,6 +520,7 @@ export default async function ClientProfilePage({
                   <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
                     Status
                   </th>
+                  <th className="px-5 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -562,6 +563,14 @@ export default async function ClientProfilePage({
                     </td>
                     <td className="px-5 py-3.5">
                       <StatusBadge status={ci.status} />
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <Link
+                        href={`/clients/${client.id}/check-in/${ci.id}/edit`}
+                        className="text-xs font-medium text-accent transition-colors hover:text-accent/80"
+                      >
+                        Edit
+                      </Link>
                     </td>
                   </tr>
                 ))}

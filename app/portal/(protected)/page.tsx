@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { verifyClientSession } from '@/lib/dal'
 import { prisma } from '@/lib/prisma'
+import { CHECK_IN_STATUS } from '@/lib/check-in-status'
 
 // ── Weight trend chart (server-rendered SVG) ──────────────────────────────────
 
@@ -170,6 +171,7 @@ export default async function PortalPage() {
         weight: true,
         sleepScore: true,
         fatigueScore: true,
+        status: true,
       },
     }),
     prisma.macroHistory.findFirst({
@@ -437,6 +439,14 @@ export default async function PortalPage() {
                     <span className="text-xs text-muted-foreground">
                       Fatigue {ci.fatigueScore}/10
                     </span>
+                    {ci.status !== CHECK_IN_STATUS.Approved && (
+                      <Link
+                        href={`/portal/check-in/${ci.id}/edit`}
+                        className="text-xs font-medium text-accent transition-colors hover:text-accent/80"
+                      >
+                        Edit
+                      </Link>
+                    )}
                   </div>
                 </div>
                 <p className="font-mono text-xl font-semibold tabular-nums text-foreground">
