@@ -4,7 +4,7 @@ import Link from "next/link";
 import {
   Users, AlertTriangle, BarChart3,
   TrendingUp, TrendingDown, Minus,
-  UserPlus, BookOpen, ArrowRight,
+  UserPlus, ArrowRight,
   CheckCircle2, Clock, ChevronRight,
 } from "lucide-react";
 import { Sidebar } from "@/components/sidebar";
@@ -218,20 +218,13 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2.5">
-              <button type="button" className={cn(
-                "inline-flex h-9 items-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold text-foreground",
-                "transition-colors hover:border-accent/40 hover:bg-muted/60",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              )}>
-                <BookOpen className="h-4 w-4" strokeWidth={2} />Create Program
-              </button>
-              <button type="button" className={cn(
+              <Link href="/clients/new" className={cn(
                 "inline-flex h-9 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-accent-foreground",
                 "shadow-sm shadow-accent/20 transition-colors hover:bg-accent/90",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               )}>
                 <UserPlus className="h-4 w-4" strokeWidth={2} />Add Client
-              </button>
+              </Link>
             </div>
           </div>
 
