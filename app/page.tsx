@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { analyzeClient, type ClientInput, type CheckInInput } from "@/lib/coach-engine";
 import { OVERDUE_DAYS } from "@/lib/triage-constants";
 import { DashboardClient, type DashboardData, type AttentionClient } from "./DashboardClient";
+import { CHECK_IN_STATUS } from "@/lib/check-in-status";
 import { verifyCoachSession } from "@/lib/dal";
 
 function daysSince(d: Date) {
@@ -122,7 +123,7 @@ export default async function DashboardPage() {
     name: ci.client.name,
     initials: toInitials(ci.client.name),
     time: new Date(ci.date).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
-    status: (ci.status === "approved" ? "on_track" : "pending_review") as
+    status: (ci.status === CHECK_IN_STATUS.Approved ? "on_track" : "pending_review") as
       "on_track" | "pending_review" | "action_needed",
   }));
 

@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Sidebar } from "@/components/sidebar";
 import { cn } from "@/lib/utils";
+import { CHECK_IN_STATUS, type CheckInStatus } from "@/lib/check-in-status";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -38,7 +39,7 @@ export type QueueClientData = {
   name: string;
   initials: string;
   submittedAt: string | null; // null when the client has no check-ins
-  status: string;             // "pending" | "approved" | "none"
+  status: CheckInStatus | 'none';
 };
 
 // Shape of the JSON returned by GET /api/checkin-analysis
@@ -190,12 +191,12 @@ function LeftPanel({ clients, selectedId, onSelect }: {
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
-  const pending = clients.filter((c) => c.status === "pending").length;
+  const pending = clients.filter((c) => c.status === CHECK_IN_STATUS.Pending).length;
 
-  function queueFlag(status: string): { label: string; color: FlagColor } {
-    if (status === "approved") return { label: "Approved", color: "success" };
-    if (status === "pending")  return { label: "Pending Review", color: "warning" };
-    return { label: "No submission", color: "neutral" };
+  function queueFlag(status: CheckInStatus | 'none'): { label: string; color: FlagColor } {
+    if (status === CHECK_IN_STATUS.Approved) return { label: "Approved",       color: "success" };
+    if (status === CHECK_IN_STATUS.Pending)  return { label: "Pending Review", color: "warning" };
+    return                                          { label: "No submission",  color: "neutral" };
   }
 
   return (
@@ -259,7 +260,7 @@ function LeftPanel({ clients, selectedId, onSelect }: {
                   </div>
                 </div>
               </div>
-              {client.status === "approved" && (
+              {client.status === CHECK_IN_STATUS.Approved && (
                 <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground/60">
                   <CheckCircle2 className="h-3 w-3" />Reviewed
                 </div>
@@ -356,7 +357,7 @@ function AnalysisPanel({
                   <span className="rounded-full border border-anomaly/30 bg-anomaly-muted px-2 py-0.5 text-[10px] font-semibold text-anomaly">
                     Safety Review
                   </span>
-                ) : latestCheckIn.status === "approved" ? (
+                ) : latestCheckIn.status === CHECK_IN_STATUS.Approved ? (
                   <span className="rounded-full border border-success/30 bg-success-muted px-2 py-0.5 text-[10px] font-semibold text-success">
                     Approved
                   </span>

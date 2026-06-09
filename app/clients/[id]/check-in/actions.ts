@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { verifyCoachSession } from '@/lib/dal'
 import { validateCheckInFormData } from '@/lib/check-in-validation'
 import type { CheckInFormErrors } from '@/lib/check-in-validation'
+import { CHECK_IN_STATUS } from '@/lib/check-in-status'
 
 export async function createCheckIn(
   clientId: string,
@@ -38,7 +39,7 @@ export async function createCheckIn(
         sleepScore,
         fatigueScore,
         cycleAffected,
-        status: 'Pending',
+        status: CHECK_IN_STATUS.Pending,
       },
     })
   } catch (err) {

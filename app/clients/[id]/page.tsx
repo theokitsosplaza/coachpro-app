@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { verifyCoachSession } from '@/lib/dal'
 import { analyzeClient } from '@/lib/coach-engine'
 import type { Triage, Severity } from '@/lib/coach-engine'
+import { CHECK_IN_STATUS } from '@/lib/check-in-status'
 import { cn } from '@/lib/utils'
 import { InviteButton } from './InviteButton'
 
@@ -219,14 +220,14 @@ function WeightChart({ checkIns }: { checkIns: Array<{ date: Date; weight: numbe
 // ── Status badge for check-in rows ───────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
-  if (status === 'Approved') {
+  if (status === CHECK_IN_STATUS.Approved) {
     return (
       <span className="inline-flex items-center rounded-full border border-success/25 bg-success-muted px-2 py-0.5 text-[10px] font-semibold text-success">
         Approved
       </span>
     )
   }
-  if (status === 'Pending') {
+  if (status === CHECK_IN_STATUS.Pending) {
     return (
       <span className="inline-flex items-center rounded-full border border-warning/30 bg-warning-muted px-2 py-0.5 text-[10px] font-semibold text-warning">
         Pending

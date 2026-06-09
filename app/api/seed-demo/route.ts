@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
+import { CHECK_IN_STATUS } from '@/lib/check-in-status';
 
 export const dynamic = 'force-dynamic'
 
@@ -78,7 +79,7 @@ export async function GET() {
           loggedProtein: 178,
           loggedCarbs:   198,
           loggedFats:    59,
-          status:        'pending',
+          status:        CHECK_IN_STATUS.Pending,
           aiSynthesis:   null,
         },
         {
@@ -90,7 +91,7 @@ export async function GET() {
           loggedProtein: 182,
           loggedCarbs:   201,
           loggedFats:    61,
-          status:        'pending',
+          status:        CHECK_IN_STATUS.Pending,
           aiSynthesis:   null,
         },
         {
@@ -102,7 +103,7 @@ export async function GET() {
           loggedProtein: 179,
           loggedCarbs:   199,
           loggedFats:    60,
-          status:        'pending',
+          status:        CHECK_IN_STATUS.Pending,
           aiSynthesis:   null,
         },
         {
@@ -114,7 +115,7 @@ export async function GET() {
           loggedProtein: 181,
           loggedCarbs:   200,
           loggedFats:    60,
-          status:        'pending',
+          status:        CHECK_IN_STATUS.Pending,
           aiSynthesis:   null,
         },
       ],

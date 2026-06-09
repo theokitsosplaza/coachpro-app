@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
+import { CHECK_IN_STATUS } from '@/lib/check-in-status';
 
 export const dynamic = 'force-dynamic'
 
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
           coachSummary,
           clientMessage: clientMessage ?? '',
         }),
-        status: 'approved',
+        status: CHECK_IN_STATUS.Approved,
       },
     });
 
