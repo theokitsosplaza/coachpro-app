@@ -7,7 +7,6 @@ import {
   Bot,
   AlertTriangle,
   CheckCircle2,
-  RotateCcw,
   TrendingUp,
   TrendingDown,
   Moon,
@@ -422,9 +421,6 @@ function AnalysisPanel({
                 : <><ShieldCheck className="h-3 w-3" />Engine passed</>
               }
             </span>
-            <button type="button" className="ml-auto flex items-center gap-1 rounded-md px-2 py-0.5 transition-colors hover:bg-muted hover:text-foreground">
-              <RotateCcw className="h-3 w-3" />Regenerate
-            </button>
           </div>
 
           {/* Key insight stats */}
