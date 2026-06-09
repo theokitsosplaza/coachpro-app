@@ -336,10 +336,11 @@ function AnalysisPanel({
   const { clientInput, latestCheckIn, synthesis, aiOutput } = data;
   const { recommendation, flags, weight, adherence } = synthesis;
 
-  // Editable macro state — pre-filled from AI proposal, coach can adjust
+  // Editable macro state — pre-filled from AI proposal or current targets on manual open
   const [editedMacros, setEditedMacros] = useState<ConfirmedMacros | null>(
     recommendation.proposedMacros ?? null,
   );
+  const [manualEditOpen, setManualEditOpen] = useState(false);
 
   // Validate before enabling Approve
   const macrosValid =
@@ -567,11 +568,13 @@ function AnalysisPanel({
                   </div>
                 </div>
 
-                {/* Proposed macros — editable before approving */}
-                {recommendation.proposedMacros && editedMacros && (
+                {/* Macro editor — shown when AI proposed or coach opened manually */}
+                {editedMacros && (
                   <div className="rounded-lg border border-accent/25 bg-accent/5 p-4">
                     <p className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      Proposed macro update — review &amp; confirm before approving
+                      {recommendation.proposedMacros
+                        ? 'Proposed macro update — review & confirm before approving'
+                        : 'Manual macro edit — adjust targets before approving'}
                     </p>
                     <div className="grid grid-cols-3 gap-3">
                       {([
@@ -653,16 +656,39 @@ function AnalysisPanel({
             </p>
           )}
           <div className="flex items-center gap-2.5">
-            <button
-              type="button"
-              className={cn(
-                "inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-card px-5 text-sm font-semibold text-foreground",
-                "transition-colors hover:border-accent/40 hover:bg-muted/60",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              )}
-            >
-              <Pencil className="h-4 w-4" strokeWidth={2} />Edit Plan Manually
-            </button>
+            {/* Hidden when AI already proposed macros (fields already visible)
+                or after approval — only needed for the no-proposal case */}
+            {!recommendation.proposedMacros && !approved && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (manualEditOpen) {
+                    setManualEditOpen(false);
+                    setEditedMacros(null);
+                  } else {
+                    setManualEditOpen(true);
+                    setEditedMacros({
+                      protein: clientInput.targetProtein,
+                      carbs:   clientInput.targetCarbs,
+                      fats:    clientInput.targetFats,
+                    });
+                  }
+                }}
+                className={cn(
+                  "inline-flex h-10 items-center gap-2 rounded-xl border px-5 text-sm font-semibold",
+                  "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  manualEditOpen
+                    ? "border-border bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    : "border-border bg-card text-foreground hover:border-accent/40 hover:bg-muted/60"
+                )}
+              >
+                {manualEditOpen ? (
+                  <><XCircle className="h-4 w-4" strokeWidth={2} />Cancel</>
+                ) : (
+                  <><Pencil className="h-4 w-4" strokeWidth={2} />Edit Plan Manually</>
+                )}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => onApprove(editedMacros)}
