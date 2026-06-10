@@ -7,6 +7,7 @@ import type { Triage, Severity } from '@/lib/coach-engine'
 import { CHECK_IN_STATUS } from '@/lib/check-in-status'
 import { cn } from '@/lib/utils'
 import { InviteButton } from './InviteButton'
+import { ClipboardList } from 'lucide-react'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -412,55 +413,74 @@ export default async function ClientProfilePage({
             Latest Analysis
           </h2>
 
-          <p className="mb-2 text-sm font-semibold leading-snug text-foreground">
-            {synthesis.recommendation.headline}
-          </p>
+          {!synthesis.dataQuality.sufficient ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+              <ClipboardList className="h-8 w-8 text-muted-foreground/40" strokeWidth={1.5} />
+              <p className="text-sm font-semibold text-muted-foreground">No analysis yet</p>
+              <p className="max-w-[220px] text-xs text-muted-foreground">
+                Once {client.name} submits their first couple of check-ins, you'll see weight
+                trends, adherence, and AI analysis here.
+              </p>
+              <Link
+                href={`/clients/${client.id}/check-in/new`}
+                className="text-xs font-semibold text-accent hover:underline"
+              >
+                Log the first check-in →
+              </Link>
+            </div>
+          ) : (
+            <>
+              <p className="mb-2 text-sm font-semibold leading-snug text-foreground">
+                {synthesis.recommendation.headline}
+              </p>
 
-          {synthesis.weight.vsGoal && (
-            <p className="mb-3 text-sm text-muted-foreground">{synthesis.weight.vsGoal}</p>
-          )}
-
-          <div className="mb-4 flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Adherence</span>
-            <span
-              className={cn(
-                'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold',
-                ADHERENCE_STYLE[synthesis.adherence.status],
+              {synthesis.weight.vsGoal && (
+                <p className="mb-3 text-sm text-muted-foreground">{synthesis.weight.vsGoal}</p>
               )}
-            >
-              {ADHERENCE_LABEL[synthesis.adherence.status]}
-              {synthesis.adherence.status !== 'unknown' && (
-                <> · {Math.round(synthesis.adherence.calorieRatio * 100)}%</>
-              )}
-            </span>
-          </div>
 
-          {synthesis.flags.length > 0 && (
-            <div className="space-y-2">
-              {synthesis.flags.slice(0, 3).map((flag) => (
-                <div
-                  key={flag.code}
+              <div className="mb-4 flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Adherence</span>
+                <span
                   className={cn(
-                    'rounded-lg border px-3 py-2 text-xs font-semibold',
-                    SEVERITY_STYLE[flag.severity],
+                    'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold',
+                    ADHERENCE_STYLE[synthesis.adherence.status],
                   )}
                 >
-                  {flag.title}
+                  {ADHERENCE_LABEL[synthesis.adherence.status]}
+                  {synthesis.adherence.status !== 'unknown' && (
+                    <> · {Math.round(synthesis.adherence.calorieRatio * 100)}%</>
+                  )}
+                </span>
+              </div>
+
+              {synthesis.flags.length > 0 && (
+                <div className="space-y-2">
+                  {synthesis.flags.slice(0, 3).map((flag) => (
+                    <div
+                      key={flag.code}
+                      className={cn(
+                        'rounded-lg border px-3 py-2 text-xs font-semibold',
+                        SEVERITY_STYLE[flag.severity],
+                      )}
+                    >
+                      {flag.title}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              )}
 
-          {synthesis.flags.length === 0 && synthesis.dataQuality.sufficient && (
-            <p className="text-xs text-success">No flags — client is on track.</p>
-          )}
+              {synthesis.flags.length === 0 && synthesis.dataQuality.sufficient && (
+                <p className="text-xs text-success">No flags — client is on track.</p>
+              )}
 
-          {synthesis.dataQuality.warnings.length > 0 &&
-            synthesis.dataQuality.warnings.map((w, i) => (
-              <p key={i} className="text-xs text-muted-foreground">
-                {w}
-              </p>
-            ))}
+              {synthesis.dataQuality.warnings.length > 0 &&
+                synthesis.dataQuality.warnings.map((w, i) => (
+                  <p key={i} className="text-xs text-muted-foreground">
+                    {w}
+                  </p>
+                ))}
+            </>
+          )}
         </div>
       </div>
 
