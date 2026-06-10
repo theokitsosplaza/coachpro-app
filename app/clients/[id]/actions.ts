@@ -36,7 +36,7 @@ export async function inviteClient(
       redirectTo: inviteRedirectTo,
     })
     if (error) {
-      console.error('[inviteClient]', error)
+      console.error('[inviteClient] invite failed:', error.message, { status: error.status, name: error.name })
       return { error: 'Failed to send invite. Please try again.' }
     }
     authUserId = data.user.id
@@ -51,7 +51,7 @@ export async function inviteClient(
       options: { shouldCreateUser: false, emailRedirectTo: resendRedirectTo },
     })
     if (error) {
-      console.error('[inviteClient resend]', error)
+      console.error('[inviteClient resend] failed:', error.message, { status: error.status, name: error.name })
       return { error: 'Failed to resend invite. Please try again.' }
     }
   }
