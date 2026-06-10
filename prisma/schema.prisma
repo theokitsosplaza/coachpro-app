@@ -10,11 +10,13 @@ datasource db {
 // 1. The Coach (Master Account)
 model Coach {
   id         String          @id @default(cuid())
-  authUserId String?         @unique   // Supabase auth.users.id (UUID)
-  email      String          @unique
-  name       String?
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+  authUserId   String?         @unique   // Supabase auth.users.id (UUID)
+  email        String          @unique
+  name         String?
+  businessName String?
+  website      String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 
   // Relations
   clients   Client[]
