@@ -960,6 +960,7 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
 
   const handleSelect = (id: string) => {
     setSelectedId(id);
+    window.history.replaceState(null, '', `?clientId=${encodeURIComponent(id)}`);
     const client = localQueue.find((c) => c.id === id);
     if (client?.status === CHECK_IN_STATUS.Approved) {
       // Already approved — show saved data, no AI call
