@@ -32,9 +32,10 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // Validates JWT signature and refreshes expired tokens.
+  // Exchange refresh token if the access token is expired.
+  // getUser() makes a network call when needed; getClaims() does not refresh.
   // IMPORTANT: must be awaited before returning supabaseResponse.
-  const { data } = await supabase.auth.getClaims();
+  const { data: { user } } = await supabase.auth.getUser()
 
   // Redirect unauthenticated requests away from protected routes.
   // Runs AFTER token refresh so a valid-but-expired token is refreshed
@@ -44,7 +45,7 @@ export async function proxy(request: NextRequest) {
     (p) => pathname === p || pathname.startsWith(p + "/")
   );
 
-  if (!isPublic && !data) {
+  if (!isPublic && !user) {
     // Portal paths land at /portal/login; all other protected paths at /login.
     const isPortalPath = pathname === "/portal" || pathname.startsWith("/portal/");
     return NextResponse.redirect(
