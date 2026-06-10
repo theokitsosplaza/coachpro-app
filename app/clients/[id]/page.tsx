@@ -7,7 +7,7 @@ import type { Triage, Severity } from '@/lib/coach-engine'
 import { CHECK_IN_STATUS } from '@/lib/check-in-status'
 import { cn } from '@/lib/utils'
 import { InviteButton } from './InviteButton'
-import { ClipboardList } from 'lucide-react'
+import { Archive, ClipboardList } from 'lucide-react'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -276,6 +276,22 @@ export default async function ClientProfilePage({
       >
         ← Back to Master Roster
       </Link>
+
+      {/* Archived banner */}
+      {client.archivedAt && (
+        <div className="mb-6 flex items-center gap-3 rounded-xl border border-warning/30 bg-warning-muted/40 px-4 py-3">
+          <Archive className="h-4 w-4 shrink-0 text-warning" strokeWidth={2} />
+          <p className="text-xs font-medium text-warning">
+            This client is archived.{' '}
+            <Link
+              href="/clients?view=archived"
+              className="underline underline-offset-2 hover:text-warning/80 transition-colors"
+            >
+              Restore or delete from the Clients page
+            </Link>.
+          </p>
+        </div>
+      )}
 
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
       <div className="mb-6 rounded-xl border border-border bg-card p-6 shadow-sm">

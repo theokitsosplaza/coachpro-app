@@ -38,6 +38,7 @@ model Client {
   email         String?
   phone         String?
   targetFiber   Int?
+  archivedAt    DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -52,8 +53,8 @@ model Client {
 model Program {
   id              String   @id @default(cuid())
   clientId        String
-  client          Client   @relation(fields: [clientId], references: [id])
-  name            String   
+  client          Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  name            String
   mesocycleLength Int      
   createdAt       DateTime @default(now())
 }
@@ -62,7 +63,7 @@ model Program {
 model WorkoutLog {
   id          String   @id @default(cuid())
   clientId    String
-  client      Client   @relation(fields: [clientId], references: [id])
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   date        DateTime @default(now())
   splitType   String   
   workoutData String   
@@ -87,7 +88,7 @@ model CheckIn {
   status        String   @default("Pending")
   cycleAffected Boolean  @default(false)
 
-  client        Client   @relation(fields: [clientId], references: [id])
+  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 // 6. Macro Versioning 
@@ -100,7 +101,7 @@ model MacroHistory {
   changeReason String?  
   changedAt    DateTime @default(now())
 
-  client       Client   @relation(fields: [clientId], references: [id])
+  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 // 7. Calendar Events 

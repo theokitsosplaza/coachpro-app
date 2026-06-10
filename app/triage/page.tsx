@@ -25,6 +25,7 @@ export default async function TriagePage() {
 
   try {
     const clients = await prisma.client.findMany({
+      where: { archivedAt: null },
       include: {
         checkIns: { orderBy: { date: 'asc' } },
       },

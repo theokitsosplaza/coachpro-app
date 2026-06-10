@@ -22,6 +22,7 @@ export default async function AICheckInsPage() {
     // Fetch all clients. For each, grab only their most-recent check-in so
     // we can show the submission time and status in the queue sidebar.
     const clients = await prisma.client.findMany({
+      where: { archivedAt: null },
       include: {
         checkIns: { orderBy: { date: 'desc' }, take: 1 },
       },
