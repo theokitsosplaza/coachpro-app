@@ -52,7 +52,8 @@ export default async function AICheckInsPage() {
               day: 'numeric', month: 'short', year: 'numeric',
             }),
           };
-        } catch {
+        } catch (err) {
+          console.error('[ai-check-ins] malformed aiSynthesis for check-in', latest.id, err);
           savedAnalysis = null;
         }
       }

@@ -115,8 +115,8 @@ export async function GET(request: Request) {
         if (typeof cached.coachSummary === 'string' && typeof cached.clientMessage === 'string') {
           aiOutput = { coachSummary: cached.coachSummary, clientMessage: cached.clientMessage };
         }
-      } catch {
-        // Malformed — fall through to regenerate below
+      } catch (err) {
+        console.error('[checkin-analysis] malformed cached aiSynthesis for check-in', latest.id, '— regenerating', err);
       }
     }
 

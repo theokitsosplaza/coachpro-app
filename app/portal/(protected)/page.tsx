@@ -244,7 +244,9 @@ export default async function PortalPage() {
         coachMessage = msg
         coachMessageDate = latestApproved.date
       }
-    } catch { /* ignore malformed JSON */ }
+    } catch (err) {
+      console.error('[portal] malformed aiSynthesis for check-in', latestApproved?.id, err);
+    }
   }
 
   return (
