@@ -34,6 +34,10 @@ export const verifyClientSession = cache(async () => {
     redirect('/portal/login');
   }
 
+  if (client.archivedAt) {
+    redirect('/portal/suspended');
+  }
+
   return client;
 });
 
