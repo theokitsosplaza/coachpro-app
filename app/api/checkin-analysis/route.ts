@@ -24,6 +24,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const coach = await prisma.coach.findUnique({
+    where:  { authUserId: data.claims.sub },
+    select: { id: true },
+  });
+  if (!coach) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const clientId = searchParams.get('clientId');
@@ -49,6 +57,10 @@ export async function GET(request: Request) {
         { error: `Client "${clientId}" not found.` },
         { status: 404 },
       );
+    }
+
+    if (row.coachId !== coach.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // The engine needs at least two points to fit a weight trend line.
