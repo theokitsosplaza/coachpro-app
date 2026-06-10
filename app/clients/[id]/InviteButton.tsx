@@ -22,7 +22,9 @@ export function InviteButton({ clientId, isInvited }: Props) {
         </p>
       )}
       {hasSuccess && (
-        <p className="text-xs text-success">Invite sent!</p>
+        <p className="text-xs text-success">
+          {(state as { success: true; message: string }).message}
+        </p>
       )}
 
       {isInvited ? (
