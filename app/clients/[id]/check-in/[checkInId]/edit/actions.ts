@@ -47,7 +47,8 @@ export async function updateCoachCheckIn(
         sleepScore,
         fatigueScore,
         cycleAffected,
-        ...(wasApproved && { status: CHECK_IN_STATUS.Pending, aiSynthesis: null }),
+        aiSynthesis: null,
+        ...(wasApproved && { status: CHECK_IN_STATUS.Pending }),
       },
     })
   } catch (err) {

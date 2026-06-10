@@ -103,9 +103,30 @@ export async function GET(request: Request) {
     // ---- 4. Run the deterministic engine ----------------------------------
     const synthesis = analyzeClient(clientInput, checkInInputs);
 
-    // ---- 5. Run the AI narrative layer ------------------------------------
-    // generateCoachOutput never throws — errors return a safe fallback object.
-    const aiOutput = await generateCoachOutput(clientInput, synthesis);
+    // ---- 5. AI narrative layer — generate once, cache to aiSynthesis ------
+    // On first view: call Claude, save result. On subsequent views: read the
+    // saved result, skip the Claude call entirely. Cache is cleared whenever
+    // the check-in is edited (see updateCoachCheckIn action).
+    let aiOutput: { coachSummary: string; clientMessage: string } | null = null;
+
+    if (latest.aiSynthesis) {
+      try {
+        const cached = JSON.parse(latest.aiSynthesis) as Record<string, unknown>;
+        if (typeof cached.coachSummary === 'string' && typeof cached.clientMessage === 'string') {
+          aiOutput = { coachSummary: cached.coachSummary, clientMessage: cached.clientMessage };
+        }
+      } catch {
+        // Malformed — fall through to regenerate below
+      }
+    }
+
+    if (!aiOutput) {
+      aiOutput = await generateCoachOutput(clientInput, synthesis);
+      await prisma.checkIn.update({
+        where: { id: latest.id },
+        data:  { aiSynthesis: JSON.stringify(aiOutput) },
+      });
+    }
 
     // ---- 6. Return everything the UI needs --------------------------------
     return NextResponse.json({
