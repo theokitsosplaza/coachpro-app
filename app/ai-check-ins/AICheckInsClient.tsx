@@ -39,6 +39,13 @@ export type QueueClientData = {
   initials: string;
   submittedAt: string | null; // null when the client has no check-ins
   status: CheckInStatus | 'none';
+  savedAnalysis: {
+    checkInId:     string;
+    coachSummary:  string;
+    clientMessage: string;
+    macros: { protein: number; carbs: number; fats: number };
+    approvedAt:    string;
+  } | null;
 };
 
 // Shape of the JSON returned by GET /api/checkin-analysis
@@ -741,6 +748,156 @@ function AnalysisPanel({
   );
 }
 
+// ── Approved (read-only) panel ────────────────────────────────────────────────
+
+function ApprovedPanel({
+  client,
+  savedAnalysis,
+}: {
+  client: QueueClientData;
+  savedAnalysis: NonNullable<QueueClientData['savedAnalysis']>;
+}) {
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      {/* Client context bar */}
+      <div className="shrink-0 border-b border-border bg-card px-6 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-accent/20 to-muted text-sm font-bold text-accent">
+            {client.initials}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base font-semibold text-foreground">{client.name}</h1>
+              <span className="rounded-full border border-success/30 bg-success-muted px-2 py-0.5 text-[10px] font-semibold text-success">
+                Approved
+              </span>
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Check-in from {savedAnalysis.approvedAt}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-4xl space-y-6 px-6 py-6 xl:px-8">
+
+          {/* Read-only notice */}
+          <div className="flex items-center gap-3 rounded-lg border border-success/25 bg-success-muted/30 px-4 py-3">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
+            <p className="text-xs font-medium text-success">
+              This check-in has been approved. Showing the analysis saved at approval — no new AI call has been made.
+            </p>
+          </div>
+
+          {/* Saved AI synthesis */}
+          <section>
+            <div className="rounded-xl border border-accent/35 bg-card shadow-lg shadow-accent/8 ring-1 ring-accent/15">
+              <div className="flex items-center gap-3 rounded-t-xl border-b border-accent/20 bg-gradient-to-r from-accent/12 to-transparent px-5 py-3.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent shadow-md shadow-accent/30">
+                  <Bot className="h-4 w-4 text-accent-foreground" strokeWidth={2} />
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-foreground">AI Synthesis</h2>
+                  <p className="text-[11px] text-muted-foreground">{client.name} · saved at approval</p>
+                </div>
+                <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-success/30 bg-success-muted px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-success">
+                  <CheckCircle2 className="h-3 w-3" />Approved
+                </span>
+              </div>
+              <div className="px-5 py-5">
+                {savedAnalysis.coachSummary ? (
+                  <p className="leading-7 text-foreground/90">{savedAnalysis.coachSummary}</p>
+                ) : (
+                  <p className="text-sm italic text-muted-foreground">No coach summary was saved.</p>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* Saved client message */}
+          {savedAnalysis.clientMessage && (
+            <section>
+              <div className="rounded-xl border border-border bg-card shadow-sm">
+                <div className="flex items-center gap-2 border-b border-border px-5 py-3.5">
+                  <MessageSquare className="h-4 w-4 text-muted-foreground" strokeWidth={2} />
+                  <h2 className="text-sm font-semibold text-foreground">Client message sent</h2>
+                </div>
+                <p className="whitespace-pre-wrap px-5 py-4 text-sm leading-relaxed text-foreground/90">
+                  {savedAnalysis.clientMessage}
+                </p>
+              </div>
+            </section>
+          )}
+
+          {/* Macro targets */}
+          <section>
+            <div className="rounded-xl border border-border bg-card shadow-sm">
+              <div className="flex items-center gap-2 border-b border-border px-5 py-3.5">
+                <Target className="h-4 w-4 text-muted-foreground" strokeWidth={2} />
+                <h2 className="text-sm font-semibold text-foreground">Macro targets at approval</h2>
+              </div>
+              <div className="grid grid-cols-3 gap-4 px-5 py-5">
+                {[
+                  { label: 'Protein', value: savedAnalysis.macros.protein, color: 'text-macro-protein' },
+                  { label: 'Carbs',   value: savedAnalysis.macros.carbs,   color: 'text-macro-carbs' },
+                  { label: 'Fats',    value: savedAnalysis.macros.fats,    color: 'text-macro-fats' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="rounded-lg bg-muted/40 p-3 text-center">
+                    <p className={cn('mb-1 text-[10px] font-semibold', color)}>{label}</p>
+                    <p className="font-mono text-2xl font-bold tabular-nums text-foreground">{value}</p>
+                    <p className="text-[10px] text-muted-foreground">g / day</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <div className="h-2" />
+        </div>
+      </div>
+
+      {/* Footer — no approve button */}
+      <div className="shrink-0 border-t border-border bg-card/95 px-6 py-4 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-4xl items-center xl:px-2">
+          <p className="flex items-center gap-1.5 text-xs font-medium text-success">
+            <CheckCircle2 className="h-4 w-4" />
+            Plan approved and saved · {savedAnalysis.approvedAt}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ApprovedFallbackPanel({ client }: { client: QueueClientData }) {
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="shrink-0 border-b border-border bg-card px-6 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-accent/20 to-muted text-sm font-bold text-accent">
+            {client.initials}
+          </div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-base font-semibold text-foreground">{client.name}</h1>
+            <span className="rounded-full border border-success/30 bg-success-muted px-2 py-0.5 text-[10px] font-semibold text-success">
+              Approved
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8 text-center">
+        <CheckCircle2 className="h-8 w-8 text-success/40" />
+        <p className="text-sm font-semibold text-muted-foreground">Check-in approved</p>
+        <p className="max-w-sm text-xs text-muted-foreground">
+          This check-in was approved but the saved analysis could not be loaded.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ── Main client component ─────────────────────────────────────────────────────
 
 export function AICheckInsClient({ queueClients }: { queueClients: QueueClientData[] }) {
@@ -750,6 +907,7 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
     ? paramId
     : (queueClients[0]?.id ?? null);
 
+  const [localQueue, setLocalQueue] = useState<QueueClientData[]>(queueClients);
   const [selectedId, setSelectedId] = useState<string | null>(initialId);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -780,14 +938,27 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
     }
   }, []);
 
-  // Auto-load when the page first mounts (uses URL ?clientId= if present)
+  // Auto-load when the page first mounts — skip the AI call for approved clients
   useEffect(() => {
-    if (initialId) fetchAnalysis(initialId);
+    if (!initialId) return;
+    const client = queueClients.find((c) => c.id === initialId);
+    if (client?.status !== CHECK_IN_STATUS.Approved) {
+      fetchAnalysis(initialId);
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSelect = (id: string) => {
     setSelectedId(id);
-    fetchAnalysis(id);
+    const client = localQueue.find((c) => c.id === id);
+    if (client?.status === CHECK_IN_STATUS.Approved) {
+      // Already approved — show saved data, no AI call
+      setLoading(false);
+      setError(null);
+      setAnalysis(null);
+      setApproved(false);
+    } else {
+      fetchAnalysis(id);
+    }
   };
 
   // POST to approve the current check-in
@@ -807,6 +978,29 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
       });
       if (res.ok) {
         setApproved(true);
+        // Update local queue so re-selecting this client shows the saved panel
+        setLocalQueue((prev) =>
+          prev.map((c) => {
+            if (c.id !== analysis.clientInput.id) return c;
+            return {
+              ...c,
+              status: CHECK_IN_STATUS.Approved,
+              savedAnalysis: {
+                checkInId:     analysis.latestCheckInId,
+                coachSummary:  analysis.aiOutput.coachSummary,
+                clientMessage,
+                macros: {
+                  protein: confirmedMacros?.protein ?? analysis.clientInput.targetProtein,
+                  carbs:   confirmedMacros?.carbs   ?? analysis.clientInput.targetCarbs,
+                  fats:    confirmedMacros?.fats     ?? analysis.clientInput.targetFats,
+                },
+                approvedAt: new Date().toLocaleDateString('en-GB', {
+                  day: 'numeric', month: 'short', year: 'numeric',
+                }),
+              },
+            };
+          }),
+        );
       } else {
         const json = await res.json();
         setError(json.error ?? "Approval failed.");
@@ -818,22 +1012,30 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
     }
   };
 
+  const selectedClient = localQueue.find((c) => c.id === selectedId) ?? null;
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar />
 
       <div className="flex min-w-0 flex-1 overflow-hidden">
         <LeftPanel
-          clients={queueClients}
+          clients={localQueue}
           selectedId={selectedId}
           onSelect={handleSelect}
         />
 
-        {/* Right panel: loading / error / analysis / empty */}
+        {/* Right panel: loading / error / approved / analysis / empty */}
         {loading ? (
-          <LoadingPanel name={queueClients.find((c) => c.id === selectedId)?.name ?? "client"} />
+          <LoadingPanel name={selectedClient?.name ?? "client"} />
         ) : error ? (
           <ErrorPanel message={error} />
+        ) : selectedClient?.status === CHECK_IN_STATUS.Approved ? (
+          selectedClient.savedAnalysis ? (
+            <ApprovedPanel client={selectedClient} savedAnalysis={selectedClient.savedAnalysis} />
+          ) : (
+            <ApprovedFallbackPanel client={selectedClient} />
+          )
         ) : analysis ? (
           <AnalysisPanel
             data={analysis}

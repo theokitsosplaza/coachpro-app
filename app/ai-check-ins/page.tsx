@@ -5,6 +5,7 @@
 import { prisma } from '@/lib/prisma';
 import { AICheckInsClient, type QueueClientData } from './AICheckInsClient';
 import { verifyCoachSession } from '@/lib/dal';
+import { CHECK_IN_STATUS } from '@/lib/check-in-status';
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -29,6 +30,32 @@ export default async function AICheckInsPage() {
 
     queueClients = clients.map((c: (typeof clients)[number]) => {
       const latest = c.checkIns[0] ?? null;
+
+      let savedAnalysis: QueueClientData['savedAnalysis'] = null;
+      if (latest?.status === CHECK_IN_STATUS.Approved && latest.aiSynthesis) {
+        try {
+          const parsed = JSON.parse(latest.aiSynthesis) as {
+            coachSummary?: string;
+            clientMessage?: string;
+          };
+          savedAnalysis = {
+            checkInId:     latest.id,
+            coachSummary:  parsed.coachSummary  ?? '',
+            clientMessage: parsed.clientMessage ?? '',
+            macros: {
+              protein: c.targetProtein,
+              carbs:   c.targetCarbs,
+              fats:    c.targetFats,
+            },
+            approvedAt: new Date(latest.date).toLocaleDateString('en-GB', {
+              day: 'numeric', month: 'short', year: 'numeric',
+            }),
+          };
+        } catch {
+          savedAnalysis = null;
+        }
+      }
+
       return {
         id:          c.id,
         name:        c.name,
@@ -36,7 +63,8 @@ export default async function AICheckInsPage() {
         submittedAt: latest
           ? new Date(latest.date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
           : null,
-        status: (latest?.status ?? 'none') as string,
+        status:       (latest?.status ?? 'none') as string,
+        savedAnalysis,
       };
     });
   } catch (err) {
