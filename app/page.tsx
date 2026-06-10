@@ -17,7 +17,7 @@ function toInitials(name: string) {
 }
 
 export default async function DashboardPage() {
-  await verifyCoachSession();
+  const coach = await verifyCoachSession();
 
   // ── 1. All clients + check-ins (for triage engine) ────────────────────────
   const clients = await prisma.client.findMany({
@@ -128,6 +128,7 @@ export default async function DashboardPage() {
   }));
 
   const data: DashboardData = {
+    coachName: coach.name,
     totalClients: clients.length,
     attentionClients,
     onTrackCount,

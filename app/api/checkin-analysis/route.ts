@@ -66,12 +66,7 @@ export async function GET(request: Request) {
     // The engine needs at least two points to fit a weight trend line.
     if (row.checkIns.length < 2) {
       return NextResponse.json(
-        {
-          error:
-            `${row.name} has only ${row.checkIns.length} check-in(s). ` +
-            'At least 2 are required to compute a reliable trend. ' +
-            'Run GET /api/seed-demo to populate demo data.',
-        },
+        { error: 'This client needs at least 2 check-ins before an analysis can be generated.' },
         { status: 400 },
       );
     }
@@ -130,7 +125,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('[checkin-analysis]', error);
     return NextResponse.json(
-      { error: 'Analysis pipeline failed.', detail: String(error) },
+      { error: 'Analysis pipeline failed.' },
       { status: 500 },
     );
   }

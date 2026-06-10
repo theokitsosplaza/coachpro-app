@@ -126,7 +126,7 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error('[checkin-approve]', err);
     return NextResponse.json(
-      { error: 'Failed to approve check-in.', detail: String(err) },
+      { error: 'Failed to approve check-in.' },
       { status: 500 },
     );
   }

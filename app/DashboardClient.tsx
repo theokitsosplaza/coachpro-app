@@ -21,6 +21,7 @@ export type AttentionClient = {
 };
 
 export type DashboardData = {
+  coachName: string;
   totalClients: number;
   attentionClients: AttentionClient[];
   onTrackCount: number;
@@ -177,7 +178,7 @@ function CheckInBarChart({ bars }: { bars: DashboardData["checkInBars"] }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function DashboardClient({ data }: { data: DashboardData }) {
-  const { totalClients, attentionClients, onTrackCount, macroCompliancePct, recentCheckIns, checkInBars } = data;
+  const { coachName, totalClients, attentionClients, onTrackCount, macroCompliancePct, recentCheckIns, checkInBars } = data;
 
   const triageItems       = attentionClients.map(toTriageItem);
   const redCount          = attentionClients.filter((c) => c.triage === "red").length;
@@ -200,7 +201,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                {getGreeting()}, Theo.
+                {getGreeting()}, {coachName}.
               </h1>
               <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                 <span suppressHydrationWarning>{formatDate()}</span>
