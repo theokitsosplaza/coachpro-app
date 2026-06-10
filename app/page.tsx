@@ -79,17 +79,22 @@ export default async function DashboardPage() {
       client: { select: { targetProtein: true, targetCarbs: true, targetFats: true } },
     },
   });
+  // Exclude check-ins from clients with no macro plan (zero targets) so they
+  // don't inflate the average by being counted as 100% compliant.
+  const planRows = complianceRows.filter((ci) =>
+    ci.client.targetProtein * 4 + ci.client.targetCarbs * 4 + ci.client.targetFats * 9 > 0
+  );
   const macroCompliancePct =
-    complianceRows.length === 0
+    planRows.length === 0
       ? null
       : Math.round(
-          (complianceRows.reduce((sum, ci) => {
+          (planRows.reduce((sum, ci) => {
             const targetKcal =
               ci.client.targetProtein * 4 + ci.client.targetCarbs * 4 + ci.client.targetFats * 9;
             const loggedKcal =
               ci.loggedProtein * 4 + ci.loggedCarbs * 4 + ci.loggedFats * 9;
-            return sum + (targetKcal > 0 ? loggedKcal / targetKcal : 1);
-          }, 0) / complianceRows.length) * 100
+            return sum + loggedKcal / targetKcal;
+          }, 0) / planRows.length) * 100
         );
 
   // ── 4. Check-in pulse (current week Mon–Sun) ──────────────────────────────

@@ -253,7 +253,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               value={macroCompliancePct !== null ? `${macroCompliancePct}%` : "—"}
               delta={macroCompliancePct !== null ? "Avg calorie adherence" : "No check-ins this week"}
               deltaDir="flat"
-              sub="7-day avg · all clients"
+              sub="7-day avg · clients with targets"
             />
           </div>
 
