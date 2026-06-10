@@ -347,6 +347,7 @@ function AnalysisPanel({
     recommendation.proposedMacros ?? null,
   );
   const [manualEditOpen, setManualEditOpen] = useState(false);
+  const [safetyAcknowledged, setSafetyAcknowledged] = useState(false);
 
   // Editable client message — pre-filled with AI draft
   const [editedMessage, setEditedMessage] = useState<string>(
@@ -675,13 +676,23 @@ function AnalysisPanel({
               <CheckCircle2 className="h-4 w-4" />
               Plan approved and saved for {clientInput.name}
             </p>
+          ) : isReview ? (
+            <label htmlFor="safety-ack" className="flex min-w-0 flex-1 cursor-pointer select-none items-center gap-2.5 pr-4">
+              <input
+                id="safety-ack"
+                type="checkbox"
+                checked={safetyAcknowledged}
+                onChange={(e) => setSafetyAcknowledged(e.target.checked)}
+                className="h-4 w-4 shrink-0 cursor-pointer rounded"
+              />
+              <span className={cn("text-xs font-medium leading-snug", safetyAcknowledged ? "text-foreground" : "text-anomaly")}>
+                I&apos;ve reviewed this safety flag and am proceeding with my own judgment
+              </span>
+            </label>
           ) : (
             <p className="text-xs text-muted-foreground">
               <span className="font-medium text-foreground">{clientInput.name}</span> ·{" "}
-              {isReview
-                ? <span className="text-anomaly font-medium">Safety brake active — human review required</span>
-                : <span className="text-warning">Awaiting approval</span>
-              }
+              <span className="text-warning">Awaiting approval</span>
             </p>
           )}
           <div className="flex items-center gap-2.5">
@@ -721,14 +732,14 @@ function AnalysisPanel({
             <button
               type="button"
               onClick={() => onApprove(editedMacros, editedMessage.trim())}
-              disabled={approving || approved || isReview || !macrosValid || !messageValid}
+              disabled={approving || approved || (isReview && !safetyAcknowledged) || !macrosValid || !messageValid}
               className={cn(
                 "inline-flex h-10 items-center gap-2 rounded-xl px-6 text-sm font-bold",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 "transition-all active:scale-[0.98]",
                 approved
                   ? "bg-success text-white shadow-md shadow-success/25"
-                  : isReview
+                  : isReview && !safetyAcknowledged
                   ? "cursor-not-allowed bg-muted text-muted-foreground"
                   : "bg-accent text-accent-foreground shadow-md shadow-accent/25 hover:bg-accent/90 hover:shadow-lg hover:shadow-accent/30"
               )}
