@@ -257,7 +257,8 @@ function LeftPanel({ clients, selectedId, onSelect }: {
                     </span>
                     {client.submittedAt && (
                       <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                        <Clock className="h-2.5 w-2.5" />{client.submittedAt}
+                        <Clock className="h-2.5 w-2.5" />
+                        {new Date(client.submittedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     )}
                   </div>

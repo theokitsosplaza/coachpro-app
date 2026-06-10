@@ -129,7 +129,7 @@ export default async function DashboardPage() {
     id: ci.client.id,
     name: ci.client.name,
     initials: toInitials(ci.client.name),
-    time: new Date(ci.date).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+    time: ci.date.toISOString(),
     status: (ci.status === CHECK_IN_STATUS.Approved ? "on_track" : "pending_review") as
       "on_track" | "pending_review" | "action_needed",
   }));

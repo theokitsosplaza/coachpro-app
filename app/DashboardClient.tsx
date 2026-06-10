@@ -345,7 +345,8 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
                               <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                                <Clock className="h-2.5 w-2.5" />{c.time}
+                                <Clock className="h-2.5 w-2.5" />
+                                {new Date(c.time).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                               </span>
                               <span className={cn("flex items-center gap-1 text-[10px] font-semibold", s.text)}>
                                 <span className={cn("h-1.5 w-1.5 rounded-full", s.dot)} />{s.label}

@@ -61,9 +61,7 @@ export default async function AICheckInsPage() {
         id:          c.id,
         name:        c.name,
         initials:    initials(c.name),
-        submittedAt: latest
-          ? new Date(latest.date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-          : null,
+        submittedAt: latest ? latest.date.toISOString() : null,
         status:       (latest?.status ?? 'none') as string,
         savedAnalysis,
       };
