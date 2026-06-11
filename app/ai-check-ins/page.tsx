@@ -66,6 +66,21 @@ export default async function AICheckInsPage() {
         status:       (latest?.status ?? 'none') as QueueClientData['status'],
         savedAnalysis,
       };
+    }).sort((a, b) => {
+      // Priority: Pending (0) → Approved (1) → no submission (2)
+      const rank = (s: QueueClientData['status']) =>
+        s === CHECK_IN_STATUS.Pending ? 0 : s === CHECK_IN_STATUS.Approved ? 1 : 2;
+      const diff = rank(a.status) - rank(b.status);
+      if (diff !== 0) return diff;
+      // Within pending: oldest first so nothing waits too long
+      // Within approved: newest first (most recently handled)
+      // Within none: no submittedAt — DB name order (asc) preserved as tiebreaker
+      if (a.submittedAt && b.submittedAt) {
+        return rank(a.status) === 0
+          ? a.submittedAt.localeCompare(b.submittedAt)  // pending: asc
+          : b.submittedAt.localeCompare(a.submittedAt); // approved: desc
+      }
+      return 0;
     });
   } catch (err) {
     // If the DB is unreachable (e.g. dev without a local Postgres), render
