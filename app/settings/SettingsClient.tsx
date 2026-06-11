@@ -18,10 +18,12 @@ import {
   Clock,
   MessageSquare,
   Info,
+  UserPlus,
+  Loader2,
 } from "lucide-react";
 import { Sidebar } from "@/components/sidebar";
 import { cn } from "@/lib/utils";
-import { updateCoachProfile } from "./actions";
+import { updateCoachProfile, inviteCoach, type InviteCoachState } from "./actions";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -150,6 +152,107 @@ function getInitials(name: string): string {
     : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+// ── Invite Coach section ──────────────────────────────────────────────────────
+
+function InviteCoachSection() {
+  const [result, setResult] = useState<InviteCoachState>(null)
+  const [isPending, startTransition] = useTransition()
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setResult(null)
+    const fd   = new FormData(e.currentTarget)
+    const form = e.currentTarget
+    startTransition(async () => {
+      const state = await inviteCoach(null, fd)
+      setResult(state)
+      if (state && 'success' in state) form.reset()
+    })
+  }
+
+  const inputCls = cn(
+    "h-9 w-full rounded-lg border border-border bg-muted/30 px-3 text-sm text-foreground",
+    "placeholder:text-muted-foreground/50 hover:border-border/80",
+    "focus:border-accent focus:bg-card focus:outline-none focus:ring-1 focus:ring-ring/30",
+    "transition-all",
+  )
+
+  return (
+    <SectionCard
+      title="Invite Coach"
+      description="Send an onboarding invite to a new coach account"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label
+              htmlFor="invite-name"
+              className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+            >
+              Full name
+            </label>
+            <input
+              id="invite-name"
+              name="name"
+              type="text"
+              required
+              placeholder="Jane Smith"
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="invite-email"
+              className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+            >
+              Email address
+            </label>
+            <input
+              id="invite-email"
+              name="email"
+              type="email"
+              required
+              placeholder="coach@example.com"
+              className={inputCls}
+            />
+          </div>
+        </div>
+
+        {result && 'error' in result && (
+          <p className="rounded-lg bg-status-red-soft px-3 py-2 text-sm text-status-red">
+            {result.error}
+          </p>
+        )}
+        {result && 'success' in result && (
+          <p className="flex items-center gap-1.5 rounded-lg bg-success-muted px-3 py-2 text-sm font-medium text-success">
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+            {result.message}
+          </p>
+        )}
+
+        <div className="flex justify-end border-t border-border pt-4">
+          <button
+            type="submit"
+            disabled={isPending}
+            className={cn(
+              "inline-flex h-9 items-center gap-2 rounded-lg bg-accent px-4 text-sm font-semibold text-accent-foreground",
+              "shadow-sm shadow-accent/20 transition-colors hover:bg-accent/90",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+            )}
+          >
+            {isPending ? (
+              <><Loader2 className="h-3.5 w-3.5 animate-spin" />Sending…</>
+            ) : (
+              <><UserPlus className="h-3.5 w-3.5" />Send invite</>
+            )}
+          </button>
+        </div>
+      </form>
+    </SectionCard>
+  )
+}
+
 // ── Tab: General ──────────────────────────────────────────────────────────────
 
 function GeneralTab({ initialProfile }: { initialProfile: CoachProfile }) {
@@ -245,6 +348,8 @@ function GeneralTab({ initialProfile }: { initialProfile: CoachProfile }) {
           ))}
         </div>
       </SectionCard>
+
+      <InviteCoachSection />
     </div>
   );
 }
