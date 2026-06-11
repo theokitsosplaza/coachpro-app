@@ -21,7 +21,7 @@ export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
     if (!globalForPrisma.prisma) {
       globalForPrisma.prisma = createPrismaClient()
     }
-    const val = (globalForPrisma.prisma as Record<string | symbol, unknown>)[prop as string | symbol]
+    const val = (globalForPrisma.prisma as unknown as Record<string | symbol, unknown>)[prop as string | symbol]
     return typeof val === 'function'
       ? (val as (...args: unknown[]) => unknown).bind(globalForPrisma.prisma)
       : val
