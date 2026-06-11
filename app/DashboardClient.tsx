@@ -331,10 +331,13 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                     ? <p className="px-5 py-4 text-xs text-muted-foreground">No check-ins yet.</p>
                     : recentCheckIns.map((c) => {
                         const s = STATUS_CONFIG[c.status];
+                        const href = c.status === "on_track"
+                          ? `/clients/${c.id}`
+                          : `/ai-check-ins?clientId=${encodeURIComponent(c.id)}`;
                         return (
                           <Link
                             key={c.checkInId}
-                            href={`/clients/${c.id}`}
+                            href={href}
                             className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/40"
                           >
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">

@@ -117,22 +117,26 @@ export default async function DashboardPage() {
   const todayIdx = dow === 0 ? 6 : dow - 1;
   const checkInBars = DAYS.map((day, i) => ({ day, count: dayCounts[i], isToday: i === todayIdx }));
 
-  // ── 5. Recent check-ins (last 5) ──────────────────────────────────────────
-  const recentRaw = await prisma.checkIn.findMany({
-    where: { client: { coachId: coach.id, archivedAt: null } },
-    orderBy: { date: "desc" },
-    take: 5,
-    include: { client: { select: { id: true, name: true } } },
-  });
-  const recentCheckIns = recentRaw.map((ci: (typeof recentRaw)[number]) => ({
-    checkInId: ci.id,
-    id: ci.client.id,
-    name: ci.client.name,
-    initials: toInitials(ci.client.name),
-    time: ci.date.toISOString(),
-    status: (ci.status === CHECK_IN_STATUS.Approved ? "on_track" : "pending_review") as
-      "on_track" | "pending_review" | "action_needed",
-  }));
+  // ── 5. Recent check-ins (one per client, up to 5, most-recent first) ────────
+  // Derived from the clients already fetched above — no extra DB query.
+  // Each client contributes at most one row (its latest check-in), so the same
+  // client can never appear twice.
+  const recentCheckIns = clients
+    .filter((c) => c.checkIns.length > 0)
+    .map((c) => {
+      const latest = c.checkIns[c.checkIns.length - 1]; // checkIns ordered asc
+      return {
+        checkInId: latest.id,
+        id: c.id,
+        name: c.name,
+        initials: toInitials(c.name),
+        time: latest.date.toISOString(),
+        status: (latest.status === CHECK_IN_STATUS.Approved ? "on_track" : "pending_review") as
+          "on_track" | "pending_review" | "action_needed",
+      };
+    })
+    .sort((a, b) => b.time.localeCompare(a.time))
+    .slice(0, 5);
 
   const data: DashboardData = {
     coachName: coach.name ?? '',
