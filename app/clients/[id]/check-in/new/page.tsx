@@ -8,12 +8,12 @@ export default async function NewCheckInPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  await verifyCoachSession();
+  const coach = await verifyCoachSession();
 
   const { id } = await params
 
-  const client = await prisma.client.findUnique({
-    where: { id },
+  const client = await prisma.client.findFirst({
+    where: { id, coachId: coach.id },
     include: {
       checkIns: {
         orderBy: { date: 'desc' },

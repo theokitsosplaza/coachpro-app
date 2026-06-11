@@ -249,12 +249,12 @@ export default async function ClientProfilePage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  await verifyCoachSession();
+  const coach = await verifyCoachSession();
 
   const { id: clientId } = await params
 
-  const client = await prisma.client.findUnique({
-    where: { id: clientId },
+  const client = await prisma.client.findFirst({
+    where: { id: clientId, coachId: coach.id },
     include: {
       checkIns: { orderBy: { date: 'desc' } },
     },
