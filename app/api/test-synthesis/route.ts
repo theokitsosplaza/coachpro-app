@@ -19,6 +19,10 @@ export const dynamic = 'force-dynamic'
 // ===========================================================================
 
 export async function GET() {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(null, { status: 404 });
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getClaims();
   if (error || !data) {
@@ -104,7 +108,7 @@ export async function GET() {
   } catch (error) {
     console.error('[test-synthesis]', error);
     return NextResponse.json(
-      { error: 'Pipeline failed.', detail: String(error) },
+      { error: 'Pipeline failed.' },
       { status: 500 },
     );
   }

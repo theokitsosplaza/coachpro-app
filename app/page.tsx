@@ -21,7 +21,7 @@ export default async function DashboardPage() {
 
   // ── 1. All clients + check-ins (for triage engine) ────────────────────────
   const clients = await prisma.client.findMany({
-    where: { archivedAt: null },
+    where: { coachId: coach.id, archivedAt: null },
     include: { checkIns: { orderBy: { date: "asc" } } },
   });
 
@@ -74,7 +74,7 @@ export default async function DashboardPage() {
   // ── 3. Macro compliance (avg calorie adherence, last 7 days) ─────────────
   const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000);
   const complianceRows = await prisma.checkIn.findMany({
-    where: { date: { gte: sevenDaysAgo }, client: { archivedAt: null } },
+    where: { date: { gte: sevenDaysAgo }, client: { coachId: coach.id, archivedAt: null } },
     include: {
       client: { select: { targetProtein: true, targetCarbs: true, targetFats: true } },
     },
@@ -105,7 +105,7 @@ export default async function DashboardPage() {
   monday.setDate(monday.getDate() - (dow === 0 ? 6 : dow - 1));
 
   const weekCheckIns = await prisma.checkIn.findMany({
-    where: { date: { gte: monday }, client: { archivedAt: null } },
+    where: { date: { gte: monday }, client: { coachId: coach.id, archivedAt: null } },
     select: { date: true },
   });
   const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -119,7 +119,7 @@ export default async function DashboardPage() {
 
   // ── 5. Recent check-ins (last 5) ──────────────────────────────────────────
   const recentRaw = await prisma.checkIn.findMany({
-    where: { client: { archivedAt: null } },
+    where: { client: { coachId: coach.id, archivedAt: null } },
     orderBy: { date: "desc" },
     take: 5,
     include: { client: { select: { id: true, name: true } } },

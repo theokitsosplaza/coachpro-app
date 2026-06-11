@@ -84,7 +84,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // ── 5. Atomic writes ───────────────────────────────────────────────────
+    // ── 5. Idempotency guard ───────────────────────────────────────────────
+    if (existing.status === CHECK_IN_STATUS.Approved) {
+      return NextResponse.json({ success: true });
+    }
+
+    // ── 6. Atomic writes ───────────────────────────────────────────────────
     await prisma.$transaction(async (tx) => {
       // Always: mark check-in approved and persist AI text
       await tx.checkIn.update({

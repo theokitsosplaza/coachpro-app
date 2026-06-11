@@ -8,15 +8,15 @@ export default async function ClientsPage({
 }: {
   searchParams: Promise<{ view?: string }>
 }) {
-  await verifyCoachSession()
+  const coach = await verifyCoachSession()
 
   const params = await searchParams
   const view = params.view === 'archived' ? 'archived' : 'active'
 
   const roster = await prisma.client.findMany({
     where: view === 'archived'
-      ? { archivedAt: { not: null } }
-      : { archivedAt: null },
+      ? { coachId: coach.id, archivedAt: { not: null } }
+      : { coachId: coach.id, archivedAt: null },
     orderBy: { createdAt: 'desc' },
   })
 

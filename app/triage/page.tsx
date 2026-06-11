@@ -19,13 +19,13 @@ function initials(name: string): string {
 }
 
 export default async function TriagePage() {
-  await verifyCoachSession();
+  const coach = await verifyCoachSession();
 
   let rows: TriageClientRow[] = [];
 
   try {
     const clients = await prisma.client.findMany({
-      where: { archivedAt: null },
+      where: { coachId: coach.id, archivedAt: null },
       include: {
         checkIns: { orderBy: { date: 'asc' } },
       },
