@@ -9,6 +9,15 @@ export async function GET(request: NextRequest) {
 
   if (token_hash && type) {
     const supabase = await createClient()
+
+    // If a valid session already exists, do not overwrite it with the token
+    // in the URL. Without this guard a logged-in user could paste another
+    // client's invite link and silently take over their session.
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    if (currentUser) {
+      return NextResponse.redirect(new URL('/portal', request.url))
+    }
+
     const { error } = await supabase.auth.verifyOtp({ type, token_hash })
     if (!error) {
       return NextResponse.redirect(new URL('/portal', request.url))
