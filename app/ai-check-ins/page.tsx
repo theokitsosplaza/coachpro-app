@@ -63,7 +63,7 @@ export default async function AICheckInsPage() {
         name:        c.name,
         initials:    initials(c.name),
         submittedAt: latest ? latest.date.toISOString() : null,
-        status:       (latest?.status ?? 'none') as string,
+        status:       (latest?.status ?? 'none') as QueueClientData['status'],
         savedAnalysis,
       };
     });

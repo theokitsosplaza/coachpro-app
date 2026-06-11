@@ -135,7 +135,7 @@ export default async function DashboardPage() {
   }));
 
   const data: DashboardData = {
-    coachName: coach.name,
+    coachName: coach.name ?? '',
     totalClients: clients.length,
     attentionClients,
     onTrackCount,
