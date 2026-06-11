@@ -32,9 +32,9 @@ model Client {
   name          String
   goal          String
   currentPhase  String
-  targetProtein Int
-  targetCarbs   Int
-  targetFats    Int
+  targetProtein Float
+  targetCarbs   Float
+  targetFats    Float
   email         String?
   phone         String?
   targetFiber   Int?

@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { AlertTriangle, ChevronDown, Loader2 } from "lucide-react";
 import { createClient, updateClient, type FormErrors } from "./actions";
 import { cn } from "@/lib/utils";
 
@@ -37,22 +37,93 @@ const inputBase =
   "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent " +
   "disabled:opacity-50";
 
+function collectWarnings(form: HTMLFormElement): string[] {
+  const protein = parseFloat((form.elements.namedItem("targetProtein") as HTMLInputElement)?.value ?? "");
+  const carbs   = parseFloat((form.elements.namedItem("targetCarbs")   as HTMLInputElement)?.value ?? "");
+  const fats    = parseFloat((form.elements.namedItem("targetFats")    as HTMLInputElement)?.value ?? "");
+
+  const ws: string[] = [];
+
+  if (!isNaN(protein) && protein > 0 && protein < 40)
+    ws.push(`Protein is ${protein}g — unusually low (typically ≥ 40g).`);
+  if (!isNaN(protein) && protein > 600)
+    ws.push(`Protein is ${protein}g — unusually high (typically ≤ 600g).`);
+  if (!isNaN(carbs) && carbs > 1000)
+    ws.push(`Carbs is ${carbs}g — unusually high (typically ≤ 1000g).`);
+  if (!isNaN(fats) && fats > 350)
+    ws.push(`Fats is ${fats}g — unusually high (typically ≤ 350g).`);
+
+  if (!isNaN(protein) && !isNaN(carbs) && !isNaN(fats)) {
+    const kcal = protein * 4 + carbs * 4 + fats * 9;
+    if (kcal < 1000)
+      ws.push(`These macros total ${Math.round(kcal)} kcal/day — unusually low.`);
+    else if (kcal > 6000)
+      ws.push(`These macros total ${Math.round(kcal)} kcal/day — unusually high.`);
+  }
+
+  return ws;
+}
+
 export function AddClientForm({ initialValues }: Props) {
-  const isEdit = !!initialValues
+  const isEdit = !!initialValues;
 
   const boundAction = isEdit
     ? updateClient.bind(null, initialValues.id)
-    : createClient
+    : createClient;
 
-  const [errors, action, isPending] = useActionState<FormErrors, FormData>(
+  const [errors, formAction, isPending] = useActionState<FormErrors, FormData>(
     boundAction,
     {},
   );
 
-  const cancelHref = isEdit ? `/clients/${initialValues.id}` : "/clients"
+  const formRef      = useRef<HTMLFormElement>(null);
+  const confirmedRef = useRef(false);
+  const [warnings, setWarnings] = useState<string[]>([]);
+
+  // Preserved values from the last failed submission.
+  const v = errors._values;
+
+  // defaultValue resolution: preserved → initial → empty.
+  const dv = {
+    name:          v?.name          ?? initialValues?.name          ?? "",
+    goal:          v?.goal          ?? initialValues?.goal          ?? "",
+    currentPhase:  v?.currentPhase  ?? initialValues?.currentPhase ?? "",
+    targetProtein: v?.targetProtein ?? (initialValues ? String(initialValues.targetProtein) : ""),
+    targetCarbs:   v?.targetCarbs   ?? (initialValues ? String(initialValues.targetCarbs)   : ""),
+    targetFats:    v?.targetFats    ?? (initialValues ? String(initialValues.targetFats)     : ""),
+    email:         v?.email         ?? initialValues?.email         ?? "",
+    phone:         v?.phone         ?? initialValues?.phone         ?? "",
+    targetFiber:   v?.targetFiber   ?? (initialValues?.targetFiber != null ? String(initialValues.targetFiber) : ""),
+  };
+
+  // Key forces input containers to remount (applying new defaultValues) when
+  // the server returns a _values snapshot after a failed submission.
+  const formKey = v ? JSON.stringify(v) : "initial";
+
   const hasOptionalValues = !!(
+    v?.email || v?.phone || v?.targetFiber ||
     initialValues?.email || initialValues?.phone || initialValues?.targetFiber
-  )
+  );
+
+  const cancelHref = isEdit ? `/clients/${initialValues.id}` : "/clients";
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    if (confirmedRef.current) {
+      confirmedRef.current = false; // reset for the next submission cycle
+      return;                       // confirmed — let the action fire
+    }
+    const ws = collectWarnings(e.currentTarget);
+    if (ws.length > 0) {
+      e.preventDefault();
+      setWarnings(ws);
+    }
+  }
+
+  function handleConfirm() {
+    confirmedRef.current = true;
+    setWarnings([]);
+    formRef.current?.requestSubmit(); // re-fires onSubmit; flag skips the check
+  }
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-8">
@@ -73,7 +144,7 @@ export function AddClientForm({ initialValues }: Props) {
         </Link>
       </div>
 
-      <form action={action} noValidate className="space-y-5">
+      <form ref={formRef} action={formAction} onSubmit={handleSubmit} noValidate className="space-y-5">
         {errors._form && (
           <div className="rounded-lg border border-anomaly/30 bg-anomaly/10 px-4 py-3 text-sm text-anomaly">
             {errors._form}
@@ -81,7 +152,7 @@ export function AddClientForm({ initialValues }: Props) {
         )}
 
         {/* ── Client details ───────────────────────────────────── */}
-        <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+        <div key={formKey + "-details"} className="rounded-xl border border-border bg-card p-6 space-y-4">
           <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
             Client Details
           </h2>
@@ -93,7 +164,7 @@ export function AddClientForm({ initialValues }: Props) {
             <input
               id="name" name="name" type="text" autoComplete="off"
               placeholder="e.g. Maria Papadopoulou" disabled={isPending}
-              defaultValue={initialValues?.name ?? ""}
+              defaultValue={dv.name}
               className={cn(inputBase, "border-border", errors.name && "border-anomaly focus:ring-anomaly/30")}
             />
             <FieldError msg={errors.name} />
@@ -106,7 +177,7 @@ export function AddClientForm({ initialValues }: Props) {
               </label>
               <select
                 id="goal" name="goal" disabled={isPending}
-                defaultValue={initialValues?.goal ?? ""}
+                defaultValue={dv.goal}
                 className={cn(inputBase, "cursor-pointer border-border", errors.goal && "border-anomaly focus:ring-anomaly/30")}
               >
                 <option value="" disabled>Select…</option>
@@ -121,7 +192,7 @@ export function AddClientForm({ initialValues }: Props) {
               </label>
               <select
                 id="currentPhase" name="currentPhase" disabled={isPending}
-                defaultValue={initialValues?.currentPhase ?? ""}
+                defaultValue={dv.currentPhase}
                 className={cn(inputBase, "cursor-pointer border-border", errors.currentPhase && "border-anomaly focus:ring-anomaly/30")}
               >
                 <option value="" disabled>Select…</option>
@@ -133,7 +204,7 @@ export function AddClientForm({ initialValues }: Props) {
         </div>
 
         {/* ── Macro targets ────────────────────────────────────── */}
-        <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+        <div key={formKey + "-macros"} className="rounded-xl border border-border bg-card p-6 space-y-4">
           <div>
             <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
               Macro Targets
@@ -145,18 +216,18 @@ export function AddClientForm({ initialValues }: Props) {
 
           <div className="grid grid-cols-3 gap-4">
             {[
-              { id: "targetProtein", label: "Protein (g)", placeholder: "150", defaultVal: initialValues?.targetProtein, error: errors.targetProtein },
-              { id: "targetCarbs",   label: "Carbs (g)",   placeholder: "200", defaultVal: initialValues?.targetCarbs,   error: errors.targetCarbs },
-              { id: "targetFats",    label: "Fats (g)",    placeholder: "60",  defaultVal: initialValues?.targetFats,    error: errors.targetFats },
+              { id: "targetProtein", label: "Protein (g)", placeholder: "150", defaultVal: dv.targetProtein, error: errors.targetProtein },
+              { id: "targetCarbs",   label: "Carbs (g)",   placeholder: "200", defaultVal: dv.targetCarbs,   error: errors.targetCarbs },
+              { id: "targetFats",    label: "Fats (g)",    placeholder: "60",  defaultVal: dv.targetFats,    error: errors.targetFats },
             ].map(({ id, label, placeholder, defaultVal, error }) => (
               <div key={id}>
                 <label htmlFor={id} className="block text-sm font-medium text-foreground mb-1.5">
                   {label} <span className="text-anomaly">*</span>
                 </label>
                 <input
-                  id={id} name={id} type="number" min="0"
+                  id={id} name={id} type="number" min="0" step="any"
                   placeholder={placeholder} disabled={isPending}
-                  defaultValue={defaultVal ?? ""}
+                  defaultValue={defaultVal}
                   className={cn(inputBase, "border-border", error && "border-anomaly focus:ring-anomaly/30")}
                 />
                 <FieldError msg={error} />
@@ -167,6 +238,7 @@ export function AddClientForm({ initialValues }: Props) {
 
         {/* ── Optional collapsible ─────────────────────────────── */}
         <details
+          key={formKey + "-optional"}
           className="group rounded-xl border border-border bg-card"
           open={hasOptionalValues || undefined}
         >
@@ -186,7 +258,7 @@ export function AddClientForm({ initialValues }: Props) {
                 </label>
                 <input id="email" name="email" type="email" autoComplete="off"
                   placeholder="client@example.com" disabled={isPending}
-                  defaultValue={initialValues?.email ?? ""}
+                  defaultValue={dv.email}
                   className={cn(inputBase, "border-border")} />
               </div>
               <div>
@@ -195,7 +267,7 @@ export function AddClientForm({ initialValues }: Props) {
                 </label>
                 <input id="phone" name="phone" type="tel"
                   placeholder="+30 690 000 0000" disabled={isPending}
-                  defaultValue={initialValues?.phone ?? ""}
+                  defaultValue={dv.phone}
                   className={cn(inputBase, "border-border")} />
               </div>
             </div>
@@ -205,13 +277,48 @@ export function AddClientForm({ initialValues }: Props) {
               </label>
               <input id="targetFiber" name="targetFiber" type="number" min="0"
                 placeholder="30" disabled={isPending}
-                defaultValue={initialValues?.targetFiber ?? ""}
+                defaultValue={dv.targetFiber}
                 className={cn(inputBase, "border-border")} />
             </div>
           </div>
         </details>
 
-        {/* Submit */}
+        {/* ── Soft-confirm warning panel ──────────────────────── */}
+        {warnings.length > 0 && (
+          <div className="rounded-xl border border-warning/40 bg-warning/10 p-4 space-y-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-warning">
+                  Please confirm these unusual values:
+                </p>
+                <ul className="space-y-0.5">
+                  {warnings.map((w, i) => (
+                    <li key={i} className="text-sm text-warning/90">• {w}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setWarnings([])}
+                className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirm}
+                className="rounded-lg border border-warning/30 bg-warning/20 px-4 py-2 text-sm font-medium text-warning hover:bg-warning/30 transition-colors"
+              >
+                Proceed anyway
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Submit ───────────────────────────────────────────── */}
         <button
           type="submit" disabled={isPending}
           className={cn(

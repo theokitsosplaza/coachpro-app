@@ -12,6 +12,19 @@ export type FormErrors = {
   targetCarbs?: string
   targetFats?: string
   _form?: string
+  // Raw field strings preserved on every error path so the form can
+  // repopulate exactly what the coach submitted.
+  _values?: {
+    name: string
+    goal: string
+    currentPhase: string
+    targetProtein: string
+    targetCarbs: string
+    targetFats: string
+    email: string
+    phone: string
+    targetFiber: string
+  }
 }
 
 type ParsedData = {
@@ -42,15 +55,27 @@ function parseAndValidate(
   const phone        = ((formData.get('phone') as string) ?? '').trim() || null
   const fiberRaw     = formData.get('targetFiber') as string
 
+  const _values = {
+    name,
+    goal,
+    currentPhase,
+    targetProtein: proteinRaw,
+    targetCarbs:   carbsRaw,
+    targetFats:    fatsRaw,
+    email:         email ?? '',
+    phone:         phone ?? '',
+    targetFiber:   fiberRaw ?? '',
+  }
+
   const errors: FormErrors = {}
 
   if (!name) errors.name = 'Name is required.'
   if (!VALID_GOALS.includes(goal))          errors.goal         = 'Please select a goal.'
   if (!VALID_PHASES.includes(currentPhase)) errors.currentPhase = 'Please select a phase.'
 
-  const targetProtein = parseInt(proteinRaw, 10)
-  const targetCarbs   = parseInt(carbsRaw, 10)
-  const targetFats    = parseInt(fatsRaw, 10)
+  const targetProtein = parseFloat(proteinRaw)
+  const targetCarbs   = parseFloat(carbsRaw)
+  const targetFats    = parseFloat(fatsRaw)
 
   if (!proteinRaw || isNaN(targetProtein) || targetProtein < 0)
     errors.targetProtein = 'Enter a valid amount (0 or more).'
@@ -59,11 +84,25 @@ function parseAndValidate(
   if (!fatsRaw || isNaN(targetFats) || targetFats < 0)
     errors.targetFats = 'Enter a valid amount (0 or more).'
 
-  if (Object.keys(errors).length > 0) return { errors }
+  if (Object.keys(errors).length > 0) return { errors: { ...errors, _values } }
 
   const targetFiber = fiberRaw ? parseInt(fiberRaw, 10) : null
 
   return { data: { name, goal, currentPhase, targetProtein, targetCarbs, targetFats, email, phone, targetFiber } }
+}
+
+function valuesFromParsed(data: ParsedData): NonNullable<FormErrors['_values']> {
+  return {
+    name:          data.name,
+    goal:          data.goal,
+    currentPhase:  data.currentPhase,
+    targetProtein: String(data.targetProtein),
+    targetCarbs:   String(data.targetCarbs),
+    targetFats:    String(data.targetFats),
+    email:         data.email ?? '',
+    phone:         data.phone ?? '',
+    targetFiber:   data.targetFiber != null ? String(data.targetFiber) : '',
+  }
 }
 
 export async function createClient(
@@ -75,16 +114,22 @@ export async function createClient(
   const result = parseAndValidate(formData)
   if (result.errors) return result.errors
 
+  let newClientId: string
   try {
-    await prisma.client.create({
+    const client = await prisma.client.create({
       data: { coachId: coach.id, ...result.data },
+      select: { id: true },
     })
+    newClientId = client.id
   } catch (err) {
     console.error('[createClient]', err)
-    return { _form: 'Something went wrong saving to the database. Please try again.' }
+    return {
+      _form: 'Something went wrong saving to the database. Please try again.',
+      _values: valuesFromParsed(result.data),
+    }
   }
 
-  redirect('/clients')
+  redirect(`/clients/${newClientId}`)
 }
 
 export async function updateClient(
@@ -97,16 +142,14 @@ export async function updateClient(
   const result = parseAndValidate(formData)
   if (result.errors) return result.errors
 
-  // Fetch current email before writing so we can detect a change.
-  // The coachId in the where clause also enforces ownership.
+  const _values = valuesFromParsed(result.data)
+
   const current = await prisma.client.findUnique({
     where: { id: clientId, coachId: coach.id },
     select: { email: true },
   })
-  if (!current) return { _form: 'Client not found.' }
+  if (!current) return { _form: 'Client not found.', _values }
 
-  // If the email address changed, clear authUserId so the client must be
-  // re-invited at the new address before portal access is restored.
   const emailChanged = result.data.email !== current.email
   const updateData = emailChanged ? { ...result.data, authUserId: null } : result.data
 
@@ -117,7 +160,10 @@ export async function updateClient(
     })
   } catch (err) {
     console.error('[updateClient]', err)
-    return { _form: 'Something went wrong saving to the database. Please try again.' }
+    return {
+      _form: 'Something went wrong saving to the database. Please try again.',
+      _values,
+    }
   }
 
   redirect(`/clients/${clientId}`)
