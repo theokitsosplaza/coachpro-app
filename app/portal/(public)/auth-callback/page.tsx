@@ -47,6 +47,11 @@ export default function PortalAuthCallbackPage() {
 
     if (code) {
       supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (error) {
+          setDebug(prev => `${prev}\n\nEXCHANGE ERROR: ${error.message} (code: ${error.code ?? 'n/a'}, status: ${error.status ?? 'n/a'})`)
+        } else {
+          setDebug(prev => `${prev}\n\nEXCHANGE SUCCESS — session established`)
+        }
         // router.replace(error ? error_dest : '/portal')
       })
       return
