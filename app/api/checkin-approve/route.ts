@@ -65,6 +65,17 @@ export async function POST(request: Request) {
           { status: 400 },
         );
       }
+      if (
+        protein > 2000 ||
+        carbs > 2000 ||
+        fats > 2000 ||
+        (protein * 4 + carbs * 4 + fats * 9) > 20000
+      ) {
+        return NextResponse.json(
+          { error: 'confirmedMacros values are outside the allowable range.' },
+          { status: 400 },
+        );
+      }
     }
 
     // ── 4. Load check-in and verify coach owns this client ─────────────────
