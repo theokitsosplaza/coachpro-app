@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import type { EmailOtpType } from '@supabase/supabase-js'
@@ -8,10 +8,15 @@ import { createClient } from '@/lib/supabase/client'
 
 export default function PortalAuthCallbackPage() {
   const router = useRouter()
+  const [debug, setDebug] = useState<string | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
     const error_dest = '/portal/login?error=invalid_link'
+
+    setDebug(
+      `href: ${window.location.href}\nsearch: ${window.location.search}\nhash: ${window.location.hash}`
+    )
 
     // Path A: implicit-flow invite (inviteUserByEmail) — tokens in hash fragment.
     const hashParams = new URLSearchParams(window.location.hash.slice(1))
@@ -20,7 +25,7 @@ export default function PortalAuthCallbackPage() {
 
     if (access_token && refresh_token) {
       supabase.auth.setSession({ access_token, refresh_token }).then(({ error }) => {
-        router.replace(error ? error_dest : '/portal')
+        // router.replace(error ? error_dest : '/portal')
       })
       return
     }
@@ -32,7 +37,7 @@ export default function PortalAuthCallbackPage() {
 
     if (token_hash && type) {
       supabase.auth.verifyOtp({ token_hash, type }).then(({ error }) => {
-        router.replace(error ? error_dest : '/portal')
+        // router.replace(error ? error_dest : '/portal')
       })
       return
     }
@@ -42,17 +47,23 @@ export default function PortalAuthCallbackPage() {
 
     if (code) {
       supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-        router.replace(error ? error_dest : '/portal')
+        // router.replace(error ? error_dest : '/portal')
       })
       return
     }
 
-    router.replace(error_dest)
+    // router.replace(error_dest)
   }, [router])
 
   return (
     <main className="min-h-screen bg-bg flex items-center justify-center">
-      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      {debug ? (
+        <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontSize: 18, padding: 32 }}>
+          {debug}
+        </pre>
+      ) : (
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      )}
     </main>
   )
 }
