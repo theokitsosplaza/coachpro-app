@@ -329,6 +329,26 @@ function EmptyPanel() {
 
 type ConfirmedMacros = { protein: number; carbs: number; fats: number };
 
+function computeMacroWarnings(macros: ConfirmedMacros | null): string[] {
+  if (!macros) return [];
+  const { protein, carbs, fats } = macros;
+  const ws: string[] = [];
+  if (protein > 0 && protein < 40)
+    ws.push(`Protein is ${protein}g — unusually low (typically ≥ 40g).`);
+  if (protein > 600)
+    ws.push(`Protein is ${protein}g — unusually high (typically ≤ 600g).`);
+  if (carbs > 1000)
+    ws.push(`Carbs is ${carbs}g — unusually high (typically ≤ 1000g).`);
+  if (fats > 350)
+    ws.push(`Fats is ${fats}g — unusually high (typically ≤ 350g).`);
+  const kcal = protein * 4 + carbs * 4 + fats * 9;
+  if (kcal < 1000)
+    ws.push(`These macros total ${Math.round(kcal)} kcal/day — unusually low.`);
+  else if (kcal > 6000)
+    ws.push(`These macros total ${Math.round(kcal)} kcal/day — unusually high.`);
+  return ws;
+}
+
 function AnalysisPanel({
   data,
   onApprove,
@@ -349,6 +369,7 @@ function AnalysisPanel({
   );
   const [manualEditOpen, setManualEditOpen] = useState(false);
   const [safetyAcknowledged, setSafetyAcknowledged] = useState(false);
+  const [macroWarningsAcknowledged, setMacroWarningsAcknowledged] = useState(false);
 
   // Editable client message — pre-filled with AI draft
   const [editedMessage, setEditedMessage] = useState<string>(
@@ -362,6 +383,7 @@ function AnalysisPanel({
     (Number.isFinite(editedMacros.protein) && editedMacros.protein >= 0 &&
      Number.isFinite(editedMacros.carbs)   && editedMacros.carbs   >= 0 &&
      Number.isFinite(editedMacros.fats)    && editedMacros.fats    >= 0);
+  const macroWarnings = computeMacroWarnings(editedMacros);
 
   // Derive insight stat colours
   const weightColor = triageColor(synthesis.triage);
@@ -608,6 +630,7 @@ function AnalysisPanel({
                                 setEditedMacros((prev) =>
                                   prev ? { ...prev, [key]: isNaN(val) ? 0 : Math.max(0, val) } : prev,
                                 );
+                                setMacroWarningsAcknowledged(false);
                               }}
                               disabled={approved}
                               className="w-full rounded-lg border border-border bg-background py-2 pl-3 pr-8 text-sm font-semibold tabular-nums text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:opacity-50"
@@ -626,6 +649,33 @@ function AnalysisPanel({
                       <p className="mt-2 text-xs text-anomaly">
                         All macro values must be 0 or greater before you can approve.
                       </p>
+                    )}
+                    {macroWarnings.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {macroWarnings.map((w, i) => (
+                          <p key={i} className="text-xs text-anomaly">{w}</p>
+                        ))}
+                      </div>
+                    )}
+                    {macroWarnings.length > 0 && (
+                      <label
+                        htmlFor="macro-warnings-ack"
+                        className="mt-3 flex cursor-pointer select-none items-center gap-2.5"
+                      >
+                        <input
+                          id="macro-warnings-ack"
+                          type="checkbox"
+                          checked={macroWarningsAcknowledged}
+                          onChange={(e) => setMacroWarningsAcknowledged(e.target.checked)}
+                          className="h-4 w-4 shrink-0 cursor-pointer rounded"
+                        />
+                        <span className={cn(
+                          "text-xs font-medium leading-snug",
+                          macroWarningsAcknowledged ? "text-foreground" : "text-anomaly",
+                        )}>
+                          I&apos;ve reviewed these macro values and am proceeding with my own judgment
+                        </span>
+                      </label>
                     )}
                   </div>
                 )}
@@ -733,7 +783,7 @@ function AnalysisPanel({
             <button
               type="button"
               onClick={() => onApprove(editedMacros, editedMessage.trim())}
-              disabled={approving || approved || (isReview && !safetyAcknowledged) || !macrosValid || !messageValid}
+              disabled={approving || approved || (isReview && !safetyAcknowledged) || !macrosValid || !messageValid || (macroWarnings.length > 0 && !macroWarningsAcknowledged)}
               className={cn(
                 "inline-flex h-10 items-center gap-2 rounded-xl px-6 text-sm font-bold",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
