@@ -37,6 +37,16 @@ export default function PortalAuthCallbackPage() {
       return
     }
 
+    // Path C: PKCE code exchange (signInWithOtp pkce_ links) — code in query params.
+    const code = searchParams.get('code')
+
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        router.replace(error ? error_dest : '/portal')
+      })
+      return
+    }
+
     router.replace(error_dest)
   }, [router])
 
