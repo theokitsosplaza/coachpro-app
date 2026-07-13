@@ -23,6 +23,7 @@ import {
   XCircle,
   BarChart3,
   MessageSquare,
+  Quote,
 } from "lucide-react";
 import { Sidebar } from "@/components/sidebar";
 import { cn } from "@/lib/utils";
@@ -40,11 +41,12 @@ export type QueueClientData = {
   submittedAt: string | null; // null when the client has no check-ins
   status: CheckInStatus | 'none';
   savedAnalysis: {
-    checkInId:     string;
-    coachSummary:  string;
-    clientMessage: string;
+    checkInId:        string;
+    coachSummary:     string;
+    clientMessage:    string;
+    clientReflection: string;
     macros: { protein: number; carbs: number; fats: number };
-    approvedAt:    string;
+    approvedAt:       string;
   } | null;
 };
 
@@ -66,6 +68,7 @@ type AnalysisResult = {
     sleepScore: number;
     fatigueScore: number;
     status: string;
+    clientReflection: string;
   };
   synthesis: {
     triage: "red" | "yellow" | "green" | "grey";
@@ -187,6 +190,42 @@ function InsightStat({ label, value, delta, color, icon: Icon }: {
       <p className={cn("mt-1 text-xl font-bold tabular-nums tracking-tight", text[color])}>{value}</p>
       {delta && <p className="mt-0.5 text-[10px] text-muted-foreground">{delta}</p>}
     </div>
+  );
+}
+
+// ── Client reflection (the client's raw words) ────────────────────────────────
+
+// Shows the exact free-text the client submitted with this check-in, unedited.
+// Rendered above the AI Synthesis so the coach reads the source before the
+// machine's interpretation of it. Falls back to a muted note when the client
+// (or a coach-entered check-in) left it blank.
+function ReflectionCard({ name, reflection }: { name: string; reflection: string }) {
+  const text = reflection?.trim();
+  return (
+    <section aria-label={`${name}'s check-in reflection`}>
+      <div className="rounded-xl border border-border bg-card shadow-sm">
+        <div className="flex items-center gap-2.5 border-b border-border px-5 py-3.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/10">
+            <Quote className="h-4 w-4 text-accent" strokeWidth={2} />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">In {name}&apos;s own words</h2>
+            <p className="text-[11px] text-muted-foreground">The client&apos;s written reflection for this check-in</p>
+          </div>
+        </div>
+        <div className="px-5 py-4">
+          {text ? (
+            <blockquote className="whitespace-pre-wrap border-l-2 border-accent/40 pl-4 text-[15px] leading-relaxed text-foreground/90">
+              {text}
+            </blockquote>
+          ) : (
+            <p className="text-sm italic text-muted-foreground">
+              No written reflection was included with this check-in.
+            </p>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -514,6 +553,9 @@ function AnalysisPanel({
               ))}
             </div>
           )}
+
+          {/* Client's raw reflection — their own words, shown above the AI's take */}
+          <ReflectionCard name={clientInput.name} reflection={latestCheckIn.clientReflection} />
 
           {/* AI Synthesis card */}
           <section aria-labelledby="synthesis-heading">
@@ -853,6 +895,9 @@ function ApprovedPanel({
             </p>
           </div>
 
+          {/* Client's raw reflection — their own words, shown above the AI's take */}
+          <ReflectionCard name={client.name} reflection={savedAnalysis.clientReflection} />
+
           {/* Saved AI synthesis */}
           <section>
             <div className="rounded-xl border border-accent/35 bg-card shadow-lg shadow-accent/8 ring-1 ring-accent/15">
@@ -1049,9 +1094,10 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
               ...c,
               status: CHECK_IN_STATUS.Approved,
               savedAnalysis: {
-                checkInId:     analysis.latestCheckInId,
-                coachSummary:  analysis.aiOutput.coachSummary,
+                checkInId:        analysis.latestCheckInId,
+                coachSummary:     analysis.aiOutput.coachSummary,
                 clientMessage,
+                clientReflection: analysis.latestCheckIn.clientReflection,
                 macros: {
                   protein: confirmedMacros?.protein ?? analysis.clientInput.targetProtein,
                   carbs:   confirmedMacros?.carbs   ?? analysis.clientInput.targetCarbs,

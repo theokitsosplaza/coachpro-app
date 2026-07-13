@@ -40,9 +40,10 @@ export default async function AICheckInsPage() {
             clientMessage?: string;
           };
           savedAnalysis = {
-            checkInId:     latest.id,
-            coachSummary:  parsed.coachSummary  ?? '',
-            clientMessage: parsed.clientMessage ?? '',
+            checkInId:        latest.id,
+            coachSummary:     parsed.coachSummary  ?? '',
+            clientMessage:    parsed.clientMessage ?? '',
+            clientReflection: latest.clientReflection,
             macros: {
               protein: c.targetProtein,
               carbs:   c.targetCarbs,
