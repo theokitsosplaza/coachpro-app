@@ -43,11 +43,21 @@ function resolveActiveItem(pathname: string, override?: string): string {
 
 type SidebarProps = {
   activeItem?: string;
+  coachName?: string;
 };
 
-export function Sidebar({ activeItem }: SidebarProps) {
+function toInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "C";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+export function Sidebar({ activeItem, coachName }: SidebarProps) {
   const pathname = usePathname();
   const active = resolveActiveItem(pathname, activeItem);
+  const displayName = coachName?.trim() || "Coach";
+  const initials = toInitials(displayName);
 
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-sidebar-accent bg-sidebar text-sidebar-foreground lg:w-60">
@@ -106,11 +116,11 @@ export function Sidebar({ activeItem }: SidebarProps) {
       <div className="border-t border-sidebar-accent p-4">
         <div className="flex items-center gap-3 rounded-lg bg-sidebar-accent px-3 py-2.5">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-active text-xs font-semibold">
-            TC
+            {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">Theo Coach</p>
-            <p className="truncate text-xs text-sidebar-muted">Pro plan</p>
+            <p className="truncate text-sm font-medium">{displayName}</p>
+            <p className="truncate text-xs text-sidebar-muted">Coach</p>
           </div>
           <form action={logout}>
             <button

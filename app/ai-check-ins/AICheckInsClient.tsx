@@ -264,7 +264,7 @@ function LeftPanel({ clients, selectedId, onSelect }: {
       <div className="flex-1 overflow-y-auto">
         {clients.length === 0 && (
           <p className="px-5 py-8 text-center text-sm text-muted-foreground">
-            No clients found. Run <code className="rounded bg-muted px-1 text-xs">/api/seed</code> to create some.
+            No check-ins in the queue yet.
           </p>
         )}
         {clients.map((client) => {
@@ -487,7 +487,7 @@ function AnalysisPanel({
             <span className="flex items-center gap-1.5 font-medium text-foreground">
               <Sparkles className="h-3 w-3 text-accent" />CoachAI Copilot
             </span>
-            <span>Claude claude-sonnet-4-6</span>
+            <span>Powered by Claude</span>
             <span>·</span>
             <span>Analysed just now</span>
             <span>·</span>

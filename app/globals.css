@@ -11,29 +11,32 @@
    ══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ── Legacy tokens (light-mode defaults) ────────────────────────────── */
-  --background:        #f8f9fb;
-  --foreground:        #0f1419;
-  --card:              #ffffff;
-  --card-foreground:   #0f1419;
-  --muted:             #f1f3f6;
-  --muted-foreground:  #5c6570;
-  --border:            #e2e6ec;
-  --sidebar:           #0f1419;
-  --sidebar-foreground:#e8eaed;
-  --sidebar-muted:     #8b939e;
-  --sidebar-accent:    #1e2630;
-  --sidebar-active:    #2d3748;
-  --accent:            #2563eb;
+  color-scheme: dark;
+
+  /* ── Core tokens — one cohesive dark theme, aligned with the v2 palette
+     below so token-based pages, the sidebar, and the portal all match. ── */
+  --background:        #0B0C0E;
+  --foreground:        #F4F5F6;
+  --card:              #191B1F;
+  --card-foreground:   #F4F5F6;
+  --muted:             #212327;
+  --muted-foreground:  #9AA0A8;
+  --border:            #292C31;
+  --sidebar:           #0E0F12;
+  --sidebar-foreground:#F4F5F6;
+  --sidebar-muted:     #8A9099;
+  --sidebar-accent:    #1C1E22;
+  --sidebar-active:    #292C31;
+  --accent:            #4D7CFE;
   --accent-foreground: #ffffff;
-  --success:           #059669;
-  --success-muted:     #ecfdf5;
-  --warning:           #d97706;
-  --warning-muted:     #fffbeb;
-  --anomaly:           #dc2626;
-  --anomaly-muted:     #fef2f2;
-  --copilot-glow:      #3b82f6;
-  --ring:              #2563eb;
+  --success:           #34D399;
+  --success-muted:     rgba(52,  211, 153, 0.13);
+  --warning:           #FBBF24;
+  --warning-muted:     rgba(251, 191, 36,  0.13);
+  --anomaly:           #FB7185;
+  --anomaly-muted:     rgba(251, 113, 133, 0.13);
+  --copilot-glow:      #4D7CFE;
+  --ring:              #4D7CFE;
 
   /* ── Design System v2 — surfaces (warm graphite, layered for depth) ── */
   --bg:        #0B0C0E;
@@ -141,27 +144,9 @@
   --font-mono:    var(--font-mono);     /* font-mono    → JetBrains Mono   */
 }
 
-/* ── Dark-mode overrides for legacy tokens ───────────────────────────────── */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background:       #0a0c10;
-    --foreground:       #f0f2f5;
-    --card:             #141820;
-    --card-foreground:  #f0f2f5;
-    --muted:            #1a1f28;
-    --muted-foreground: #9aa3af;
-    --border:           #252b36;
-    --sidebar:          #080a0d;
-    --sidebar-foreground:#e8eaed;
-    --sidebar-muted:    #6b7280;
-    --sidebar-accent:   #141820;
-    --sidebar-active:   #1e2630;
-    --accent:           #3b82f6;
-    --success-muted:    #052e1f;
-    --warning-muted:    #422006;
-    --anomaly-muted:    #450a0a;
-  }
-}
+/* The theme is a single cohesive dark palette defined in :root above — there
+   is deliberately no prefers-color-scheme light variant, so the product looks
+   identical regardless of the coach's OS setting. */
 
 /* ── Base body styles ─────────────────────────────────────────────────────── */
 body {
@@ -170,4 +155,7 @@ body {
   /* Use the new body font (Hanken Grotesk) when next/font has loaded it;
      fall back gracefully so the page never renders without a font. */
   font-family: var(--font-body, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }

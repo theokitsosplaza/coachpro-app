@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Search, Archive, RotateCcw, Trash2, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { archiveClient, restoreClient, deleteClient } from "./actions";
 
 type RosterEntry = {
@@ -134,23 +135,24 @@ export function RosterClient({
                 actingId === client.id && "pointer-events-none opacity-50"
               )}
             >
-              <div className="p-6 border border-gray-800 bg-black/50 rounded-xl shadow-sm hover:border-gray-600 hover:bg-gray-900 transition-all cursor-pointer h-full">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h2 className="text-xl font-semibold text-white">{client.name}</h2>
-                    <p className="text-sm text-gray-400 mt-1">
-                      Goal: <span className="text-white">{client.goal}</span> | Phase:{" "}
-                      <span className="text-white">{client.currentPhase}</span>
+              <div className="h-full cursor-pointer rounded-xl border border-border bg-card p-5 shadow-sm transition-colors hover:border-border-strong hover:bg-muted/30">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <h2 className="font-display text-lg font-semibold text-foreground">{client.name}</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Goal: <span className="text-foreground">{client.goal}</span>
+                      <span className="mx-2 text-border">·</span>
+                      Phase: <span className="text-foreground">{client.currentPhase}</span>
                     </p>
                   </div>
-                  <div className="flex gap-3 text-sm font-medium">
-                    <span className="bg-blue-900/50 text-blue-300 px-3 py-1 rounded-full border border-blue-800">
+                  <div className="flex shrink-0 gap-2 text-xs font-semibold">
+                    <span className="rounded-full border border-macro-protein/20 bg-macro-protein/10 px-2.5 py-1 text-macro-protein">
                       {client.targetProtein}g Protein
                     </span>
-                    <span className="bg-green-900/50 text-green-300 px-3 py-1 rounded-full border border-green-800">
+                    <span className="rounded-full border border-macro-carbs/20 bg-macro-carbs/10 px-2.5 py-1 text-macro-carbs">
                       {client.targetCarbs}g Carbs
                     </span>
-                    <span className="bg-yellow-900/50 text-yellow-300 px-3 py-1 rounded-full border border-yellow-800">
+                    <span className="rounded-full border border-macro-fats/20 bg-macro-fats/10 px-2.5 py-1 text-macro-fats">
                       {client.targetFats}g Fats
                     </span>
                   </div>
@@ -213,8 +215,11 @@ export function RosterClient({
 
         {/* Empty states */}
         {roster.length === 0 && view === "active" && (
-          <div className="text-gray-500 text-center py-10">
-            No clients found. Time to sign some up!
+          <div className="rounded-xl border border-dashed border-border bg-card/40 py-12 text-center">
+            <p className="text-sm font-semibold text-foreground">No clients yet</p>
+            <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
+              Add your first client to start tracking check-ins and building plans.
+            </p>
           </div>
         )}
 
@@ -253,23 +258,12 @@ export function RosterClient({
               </div>
             </div>
             <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setPendingDelete(null)}
-                className="h-9 rounded-lg border border-border bg-card px-4 text-xs font-semibold text-foreground hover:bg-muted transition-colors"
-              >
+              <Button variant="secondary" size="sm" onClick={() => setPendingDelete(null)}>
                 Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                className={cn(
-                  "h-9 rounded-lg border border-anomaly/50 bg-anomaly-muted px-4 text-xs font-bold text-anomaly",
-                  "hover:bg-anomaly-muted/80 transition-colors"
-                )}
-              >
+              </Button>
+              <Button variant="danger" size="sm" onClick={handleDelete}>
                 Permanently delete
-              </button>
+              </Button>
             </div>
           </div>
         </div>

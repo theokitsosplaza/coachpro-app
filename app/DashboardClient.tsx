@@ -193,14 +193,14 @@ export function DashboardClient({ data }: { data: DashboardData }) {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar />
+      <Sidebar coachName={coachName} />
       <main className="flex-1 overflow-auto">
         <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
 
           {/* Greeting header */}
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
                 {getGreeting()}, {coachName}.
               </h1>
               <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
