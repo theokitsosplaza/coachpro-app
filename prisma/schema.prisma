@@ -84,6 +84,12 @@ model CheckIn {
   loggedCarbs   Int
   loggedFats    Int
 
+  // Client's own words on how the week went — the core qualitative signal.
+  // NOT NULL; empty-string default backfills pre-existing rows and lets coach-
+  // side / seed writes omit it. Non-empty is enforced at the app layer for the
+  // client check-in form (see lib/check-in-validation.ts).
+  clientReflection String @default("")
+
   aiSynthesis   String?
   status        String   @default("Pending")
   cycleAffected Boolean  @default(false)

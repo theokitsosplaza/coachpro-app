@@ -14,10 +14,10 @@ export async function submitClientCheckIn(
   // clientId is derived entirely from the verified session — never from form data
   const client = await verifyClientSession()
 
-  const result = validateCheckInFormData(formData)
+  const result = validateCheckInFormData(formData, { requireReflection: true })
   if (!result.ok) return result.errors
 
-  const { weight, loggedProtein, loggedCarbs, loggedFats, sleepScore, fatigueScore, cycleAffected } = result
+  const { weight, loggedProtein, loggedCarbs, loggedFats, sleepScore, fatigueScore, cycleAffected, clientReflection } = result
 
   try {
     await prisma.checkIn.create({
@@ -30,6 +30,7 @@ export async function submitClientCheckIn(
         sleepScore,
         fatigueScore,
         cycleAffected,
+        clientReflection,
         status: CHECK_IN_STATUS.Pending,
       },
     })

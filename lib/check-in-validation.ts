@@ -1,3 +1,5 @@
+export const MIN_REFLECTION_LENGTH = 10
+
 export type CheckInFormErrors = {
   weight?: string
   loggedProtein?: string
@@ -5,6 +7,7 @@ export type CheckInFormErrors = {
   loggedFats?: string
   sleepScore?: string
   fatigueScore?: string
+  clientReflection?: string
   _form?: string
 }
 
@@ -17,13 +20,22 @@ type ValidatedCheckIn = {
   sleepScore: number
   fatigueScore: number
   cycleAffected: boolean
+  clientReflection?: string
 }
 
 type ValidationResult =
   | { ok: false; errors: CheckInFormErrors }
   | ValidatedCheckIn
 
-export function validateCheckInFormData(formData: FormData): ValidationResult {
+// requireReflection is opt-in so only the client portal form enforces the
+// free-text reflection. The coach-side manual-entry form shares this validator
+// and must not be forced to write the client's words on their behalf.
+type ValidateOptions = { requireReflection?: boolean }
+
+export function validateCheckInFormData(
+  formData: FormData,
+  { requireReflection = false }: ValidateOptions = {},
+): ValidationResult {
   const weightRaw     = formData.get('weight') as string
   const proteinRaw    = formData.get('loggedProtein') as string
   const carbsRaw      = formData.get('loggedCarbs') as string
@@ -54,7 +66,15 @@ export function validateCheckInFormData(formData: FormData): ValidationResult {
   if (!fatigueRaw || isNaN(fatigueScore) || fatigueScore < 1 || fatigueScore > 10)
     errors.fatigueScore = 'Enter a score from 1 to 10.'
 
+  let clientReflection: string | undefined
+  if (requireReflection) {
+    clientReflection = ((formData.get('clientReflection') as string | null) ?? '').trim()
+    if (clientReflection.length < MIN_REFLECTION_LENGTH)
+      errors.clientReflection =
+        `Please write at least ${MIN_REFLECTION_LENGTH} characters so your coach has real context.`
+  }
+
   if (Object.keys(errors).length > 0) return { ok: false, errors }
 
-  return { ok: true, weight, loggedProtein, loggedCarbs, loggedFats, sleepScore, fatigueScore, cycleAffected }
+  return { ok: true, weight, loggedProtein, loggedCarbs, loggedFats, sleepScore, fatigueScore, cycleAffected, clientReflection }
 }

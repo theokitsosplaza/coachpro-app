@@ -27,6 +27,12 @@ const inputBase =
   'focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent ' +
   'disabled:opacity-50'
 
+const textareaBase =
+  'w-full rounded-xl border bg-background px-3 py-2.5 text-sm leading-relaxed text-foreground ' +
+  'placeholder:text-muted-foreground/50 transition-colors resize-y min-h-[140px] ' +
+  'focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent ' +
+  'disabled:opacity-50'
+
 export function PortalCheckInForm({ lastCheckIn }: { lastCheckIn: LastCheckIn }) {
   const [errors, action, isPending] = useActionState<CheckInFormErrors, FormData>(
     submitClientCheckIn,
@@ -40,6 +46,43 @@ export function PortalCheckInForm({ lastCheckIn }: { lastCheckIn: LastCheckIn })
           {errors._form}
         </div>
       )}
+
+      {/* ── Reflection (the core qualitative signal) ──────────────── */}
+      <div
+        className="rounded-2xl border border-border-strong bg-surface-2 p-5 space-y-3"
+        style={{ boxShadow: 'var(--shadow-card)' }}
+      >
+        <div>
+          <label
+            htmlFor="clientReflection"
+            className="block font-display text-base font-semibold text-foreground"
+          >
+            How did this week really go? <span className="text-anomaly">*</span>
+          </label>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Tell me about your training, nutrition, sleep, energy, and anything in
+            life affecting them — in your own words.
+          </p>
+        </div>
+        <textarea
+          id="clientReflection"
+          name="clientReflection"
+          rows={6}
+          disabled={isPending}
+          placeholder={
+            "e.g. Training felt strong — hit all 4 sessions and added 2.5kg on squats. " +
+            "Nutrition was tight during the week but I ate out twice on the weekend. " +
+            "Sleep was rough Mon–Tue with a work deadline, then recovered. " +
+            "Energy good overall, just a bit stressed toward the end of the week."
+          }
+          className={cn(
+            textareaBase,
+            'border-border',
+            errors.clientReflection && 'border-anomaly focus:ring-anomaly/30',
+          )}
+        />
+        <FieldError msg={errors.clientReflection} />
+      </div>
 
       {/* ── Body ──────────────────────────────────────────────────── */}
       <div
