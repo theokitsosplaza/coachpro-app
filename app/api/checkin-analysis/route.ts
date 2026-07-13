@@ -121,7 +121,9 @@ export async function GET(request: Request) {
     }
 
     if (!aiOutput) {
-      aiOutput = await generateCoachOutput(clientInput, synthesis);
+      // Pass the latest check-in's free-text reflection as tone-only context.
+      // The system prompt forbids it from overriding the Synthesis or safety logic.
+      aiOutput = await generateCoachOutput(clientInput, synthesis, latest.clientReflection);
       await prisma.checkIn.update({
         where: { id: latest.id },
         data:  { aiSynthesis: JSON.stringify(aiOutput) },
