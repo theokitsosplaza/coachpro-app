@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Sparkles,
@@ -1014,59 +1014,61 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
     ? paramId
     : (queueClients[0]?.id ?? null);
 
+  // Whether the initially-selected client needs an AI analysis fetched on mount.
+  // Approved clients show their saved analysis instead, so they never fetch.
+  const initialClient = initialId ? queueClients.find((c) => c.id === initialId) : undefined;
+  const autoFetchOnMount = !!initialId && initialClient?.status !== CHECK_IN_STATUS.Approved;
+
   const [localQueue, setLocalQueue] = useState<QueueClientData[]>(queueClients);
   const [selectedId, setSelectedId] = useState<string | null>(initialId);
-  const [loading, setLoading] = useState(false);
+  // Seed `loading` from the mount decision so the effect below never has to call
+  // setState synchronously (which would trigger a cascading render).
+  const [loading, setLoading] = useState(autoFetchOnMount);
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [approving, setApproving] = useState(false);
   const [approved, setApproved] = useState(false);
 
-  // Fetch analysis whenever the selected client changes
-  const fetchAnalysis = useCallback(async (clientId: string) => {
-    setLoading(true);
-    setError(null);
-    setAnalysis(null);
-    setApproved(false);
-
-    try {
-      const res = await fetch(`/api/checkin-analysis?clientId=${encodeURIComponent(clientId)}`);
-      const json = await res.json();
-
-      if (!res.ok) {
-        setError(json.error ?? "An unexpected error occurred.");
-      } else {
-        setAnalysis(json as AnalysisResult);
-      }
-    } catch {
-      setError("Network error — could not reach the analysis API.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Auto-load when the page first mounts — skip the AI call for approved clients
+  // Fetch the analysis for the selected client. Keying the effect on selectedId
+  // routes every fetch — the initial mount and each later switch — through here.
+  // All setState runs inside the promise callbacks (never synchronously in the
+  // effect body), and a stale-response guard stops rapid switches from clobbering
+  // each other. Approved clients render saved data, so they are skipped.
   useEffect(() => {
-    if (!initialId) return;
-    const client = queueClients.find((c) => c.id === initialId);
-    if (client?.status !== CHECK_IN_STATUS.Approved) {
-      fetchAnalysis(initialId);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!selectedId) return;
+    const client = localQueue.find((c) => c.id === selectedId);
+    if (client?.status === CHECK_IN_STATUS.Approved) return;
+
+    let ignore = false;
+    fetch(`/api/checkin-analysis?clientId=${encodeURIComponent(selectedId)}`)
+      .then(async (res) => ({ ok: res.ok, json: await res.json() }))
+      .then(({ ok, json }) => {
+        if (ignore) return;
+        if (!ok) setError(json.error ?? "An unexpected error occurred.");
+        else setAnalysis(json as AnalysisResult);
+      })
+      .catch(() => {
+        if (!ignore) setError("Network error — could not reach the analysis API.");
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+
+    return () => { ignore = true; };
+  }, [selectedId, localQueue]);
 
   const handleSelect = (id: string) => {
     setSelectedId(id);
     window.history.replaceState(null, '', `?clientId=${encodeURIComponent(id)}`);
     const client = localQueue.find((c) => c.id === id);
-    if (client?.status === CHECK_IN_STATUS.Approved) {
-      // Already approved — show saved data, no AI call
-      setLoading(false);
-      setError(null);
-      setAnalysis(null);
-      setApproved(false);
-    } else {
-      fetchAnalysis(id);
-    }
+    // Reset the panel immediately — setState in an event handler is fine. The
+    // effect above then fetches for non-approved clients; approved clients show
+    // their saved analysis, so no AI call is made.
+    const isApproved = client?.status === CHECK_IN_STATUS.Approved;
+    setError(null);
+    setAnalysis(null);
+    setApproved(false);
+    setLoading(!isApproved);
   };
 
   // POST to approve the current check-in
