@@ -137,12 +137,6 @@ function adherenceColor(status: string): FlagColor {
   return "warning";
 }
 
-function severityColor(s: string): FlagColor {
-  if (s === "safety") return "danger";
-  if (s === "warning") return "warning";
-  return "neutral";
-}
-
 function fmtRate(rate: number | null): string {
   if (rate === null) return "N/A";
   const sign = rate >= 0 ? "+" : "";

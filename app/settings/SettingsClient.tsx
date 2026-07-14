@@ -22,6 +22,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Sidebar } from "@/components/sidebar";
+import { buttonClass } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { updateCoachProfile, inviteCoach, type InviteCoachState } from "./actions";
 
@@ -234,12 +235,7 @@ function InviteCoachSection() {
           <button
             type="submit"
             disabled={isPending}
-            className={cn(
-              "inline-flex h-9 items-center gap-2 rounded-lg bg-accent px-4 text-sm font-semibold text-accent-foreground",
-              "shadow-sm shadow-accent/20 transition-colors hover:bg-accent/90",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-            )}
+            className={buttonClass({ size: "md" })}
           >
             {isPending ? (
               <><Loader2 className="h-3.5 w-3.5 animate-spin" />Sending…</>
@@ -283,7 +279,7 @@ function GeneralTab({ initialProfile }: { initialProfile: CoachProfile }) {
     <div className="space-y-6">
       <SectionCard title="Coach Profile" description="Your identity on the platform">
         <div className="flex items-start gap-5">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-accent/20 to-muted text-xl font-bold text-accent">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-accent-soft text-xl font-bold text-accent">
             {getInitials(profile.name)}
           </div>
           <div className="grid flex-1 gap-4 sm:grid-cols-2">
@@ -317,12 +313,7 @@ function GeneralTab({ initialProfile }: { initialProfile: CoachProfile }) {
             type="button"
             onClick={handleSave}
             disabled={isPending}
-            className={cn(
-              "inline-flex h-9 items-center gap-2 rounded-lg bg-accent px-4 text-sm font-semibold text-accent-foreground",
-              "shadow-sm shadow-accent/20 transition-colors hover:bg-accent/90",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
-            )}
+            className={buttonClass({ size: "md" })}
           >
             {isPending ? "Saving…" : "Save profile"}
           </button>

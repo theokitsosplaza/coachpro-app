@@ -4,6 +4,7 @@ import { useActionState, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ChevronDown, Loader2 } from "lucide-react";
 import { createClient, updateClient, type FormErrors } from "./actions";
+import { buttonClass } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const GOALS  = ["Fat Loss", "Muscle Gain", "Maintenance", "Recomp"] as const;
@@ -129,10 +130,10 @@ export function AddClientForm({ initialValues }: Props) {
     <div className="mx-auto max-w-2xl px-6 py-8">
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {isEdit ? "Edit Client" : "Add New Client"}
+          <h1 className="font-display text-[28px] font-semibold leading-none tracking-[-0.01em] text-foreground">
+            {isEdit ? "Edit client" : "Add new client"}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-2.5 text-sm text-muted-foreground">
             Required fields are marked <span className="text-anomaly">*</span>
           </p>
         </div>
@@ -153,8 +154,8 @@ export function AddClientForm({ initialValues }: Props) {
 
         {/* ── Client details ───────────────────────────────────── */}
         <div key={formKey + "-details"} className="rounded-xl border border-border bg-card p-6 space-y-4">
-          <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-            Client Details
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
+            Client details
           </h2>
 
           <div>
@@ -206,8 +207,8 @@ export function AddClientForm({ initialValues }: Props) {
         {/* ── Macro targets ────────────────────────────────────── */}
         <div key={formKey + "-macros"} className="rounded-xl border border-border bg-card p-6 space-y-4">
           <div>
-            <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              Macro Targets
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
+              Macro targets
             </h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
               The coach engine uses these to assess weekly adherence.
@@ -303,14 +304,14 @@ export function AddClientForm({ initialValues }: Props) {
               <button
                 type="button"
                 onClick={() => setWarnings([])}
-                className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className={buttonClass({ variant: "secondary", size: "md" })}
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleConfirm}
-                className="rounded-lg border border-warning/30 bg-warning/20 px-4 py-2 text-sm font-medium text-warning hover:bg-warning/30 transition-colors"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-warning/40 bg-warning-muted px-4 text-sm font-semibold text-warning transition-colors hover:bg-warning/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 Proceed anyway
               </button>
@@ -321,18 +322,12 @@ export function AddClientForm({ initialValues }: Props) {
         {/* ── Submit ───────────────────────────────────────────── */}
         <button
           type="submit" disabled={isPending}
-          className={cn(
-            "w-full inline-flex items-center justify-center gap-2 rounded-xl",
-            "bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground",
-            "shadow-sm shadow-accent/20 transition-colors hover:bg-accent/90",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            "disabled:opacity-50 disabled:cursor-not-allowed",
-          )}
+          className={buttonClass({ size: "lg", className: "w-full" })}
         >
           {isPending ? (
             <><Loader2 className="h-4 w-4 animate-spin" /> {isEdit ? "Saving…" : "Adding client…"}</>
           ) : (
-            isEdit ? "Save Changes" : "Add Client to Roster"
+            isEdit ? "Save changes" : "Add client to roster"
           )}
         </button>
       </form>
