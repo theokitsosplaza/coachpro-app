@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { updateCoachCheckIn } from "./actions";
 import type { CheckInFormErrors } from "@/lib/check-in-validation";
+import { buttonClass } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type CheckInValues = {
@@ -54,9 +55,9 @@ export function CheckInEditForm({ clientId, clientName, checkIn, wasApproved }: 
     <div className="mx-auto max-w-2xl px-6 py-8">
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-muted-foreground mb-0.5">{clientName}</p>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Edit Check-in</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">{clientName}</p>
+          <h1 className="font-display text-[28px] font-semibold leading-none tracking-[-0.01em] text-foreground">Edit check-in</h1>
+          <p className="mt-2.5 text-sm text-muted-foreground">
             Correcting submission from <span className="font-medium text-foreground">{formattedDate}</span>
           </p>
         </div>
@@ -83,8 +84,8 @@ export function CheckInEditForm({ clientId, clientName, checkIn, wasApproved }: 
 
         {/* ── Body Metrics ─────────────────────────────────────── */}
         <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-          <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-            Body Metrics
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
+            Body metrics
           </h2>
           <div className="max-w-[180px]">
             <label htmlFor="weight" className="block text-sm font-medium text-foreground mb-1.5">
@@ -104,8 +105,8 @@ export function CheckInEditForm({ clientId, clientName, checkIn, wasApproved }: 
         {/* ── Nutrition Log ─────────────────────────────────────── */}
         <div className="rounded-xl border border-border bg-card p-6 space-y-4">
           <div>
-            <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              Nutrition Log
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
+              Nutrition log
             </h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
               This week&apos;s average daily intake.
@@ -137,7 +138,7 @@ export function CheckInEditForm({ clientId, clientName, checkIn, wasApproved }: 
         {/* ── Wellbeing ─────────────────────────────────────────── */}
         <div className="rounded-xl border border-border bg-card p-6 space-y-4">
           <div>
-            <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
               Wellbeing
             </h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
@@ -200,18 +201,12 @@ export function CheckInEditForm({ clientId, clientName, checkIn, wasApproved }: 
         <button
           type="submit"
           disabled={isPending}
-          className={cn(
-            "w-full inline-flex items-center justify-center gap-2 rounded-xl",
-            "bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground",
-            "shadow-sm shadow-accent/20 transition-colors hover:bg-accent/90",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            "disabled:opacity-50 disabled:cursor-not-allowed",
-          )}
+          className={buttonClass({ size: "lg", className: "w-full" })}
         >
           {isPending ? (
             <><Loader2 className="h-4 w-4 animate-spin" /> Saving changes…</>
           ) : (
-            "Save Changes"
+            "Save changes"
           )}
         </button>
       </form>

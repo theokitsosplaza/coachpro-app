@@ -8,6 +8,7 @@ import {
   CheckCircle2, Clock, ChevronRight,
 } from "lucide-react";
 import { Sidebar } from "@/components/sidebar";
+import { buttonClass } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 // ── Exported types (consumed by the server component) ─────────────────────────
@@ -200,7 +201,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
           {/* Greeting header */}
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
+              <h1 className="font-display text-[28px] font-semibold leading-none tracking-[-0.01em] text-foreground">
                 {getGreeting()}, {coachName}.
               </h1>
               <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
@@ -219,11 +220,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2.5">
-              <Link href="/clients/new" className={cn(
-                "inline-flex h-9 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-accent-foreground",
-                "shadow-sm shadow-accent/20 transition-colors hover:bg-accent/90",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              )}>
+              <Link href="/clients/new" className={buttonClass()}>
                 <UserPlus className="h-4 w-4" strokeWidth={2} />Add Client
               </Link>
             </div>

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 import { submitClientCheckIn } from './actions'
 import type { CheckInFormErrors } from '@/lib/check-in-validation'
+import { buttonClass } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 type LastCheckIn = {
@@ -22,13 +23,13 @@ function FieldError({ msg }: { msg?: string }) {
 }
 
 const inputBase =
-  'w-full rounded-xl border bg-background px-3 py-2.5 text-sm text-foreground ' +
+  'w-full rounded-lg border bg-background px-3 py-2.5 text-sm text-foreground ' +
   'placeholder:text-muted-foreground/50 transition-colors ' +
   'focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent ' +
   'disabled:opacity-50'
 
 const textareaBase =
-  'w-full rounded-xl border bg-background px-3 py-2.5 text-sm leading-relaxed text-foreground ' +
+  'w-full rounded-lg border bg-background px-3 py-2.5 text-sm leading-relaxed text-foreground ' +
   'placeholder:text-muted-foreground/50 transition-colors resize-y min-h-[140px] ' +
   'focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent ' +
   'disabled:opacity-50'
@@ -89,7 +90,7 @@ export function PortalCheckInForm({ lastCheckIn }: { lastCheckIn: LastCheckIn })
         className="rounded-2xl border border-border-strong bg-surface-2 p-5 space-y-4"
         style={{ boxShadow: 'var(--shadow-card)' }}
       >
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
           Body
         </h2>
         <div className="max-w-[200px]">
@@ -113,7 +114,7 @@ export function PortalCheckInForm({ lastCheckIn }: { lastCheckIn: LastCheckIn })
         style={{ boxShadow: 'var(--shadow-card)' }}
       >
         <div>
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
             Nutrition
           </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
@@ -149,7 +150,7 @@ export function PortalCheckInForm({ lastCheckIn }: { lastCheckIn: LastCheckIn })
         style={{ boxShadow: 'var(--shadow-card)' }}
       >
         <div>
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
             Wellbeing
           </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
@@ -215,26 +216,17 @@ export function PortalCheckInForm({ lastCheckIn }: { lastCheckIn: LastCheckIn })
         <button
           type="submit"
           disabled={isPending}
-          className={cn(
-            'w-full inline-flex items-center justify-center gap-2 rounded-2xl',
-            'bg-accent px-6 py-3.5 text-sm font-semibold text-accent-foreground',
-            'shadow-sm shadow-accent/20',
-            'transition-all duration-200 ease-out',
-            'hover:bg-accent-hover hover:-translate-y-0.5 hover:shadow-[0_8px_24px_var(--accent-ring)]',
-            'active:bg-accent-press active:translate-y-0 active:shadow-sm',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-            'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:bg-accent disabled:hover:shadow-sm',
-          )}
+          className={buttonClass({ size: 'lg', className: 'w-full' })}
         >
           {isPending ? (
             <><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</>
           ) : (
-            'Submit Check-in'
+            'Submit check-in'
           )}
         </button>
         <Link
           href="/portal"
-          className="w-full inline-flex items-center justify-center rounded-xl border border-border px-6 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground"
+          className={buttonClass({ variant: 'secondary', size: 'lg', className: 'w-full' })}
         >
           Cancel
         </Link>

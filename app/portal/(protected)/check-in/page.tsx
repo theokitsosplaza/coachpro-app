@@ -23,8 +23,8 @@ export default async function CheckInPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
-            Weekly Check-in
+          <h1 className="font-display text-[28px] font-semibold leading-none tracking-[-0.01em] text-foreground">
+            Weekly check-in
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {lastCheckIn

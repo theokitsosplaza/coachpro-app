@@ -26,10 +26,10 @@ export default async function ClientsPage({
     <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="font-display text-[28px] font-semibold leading-none tracking-[-0.01em] text-foreground">
             Clients
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-2.5 text-sm text-muted-foreground">
             Your full roster and check-in history
           </p>
         </div>

@@ -27,7 +27,7 @@ function WeightChart({ checkIns }: { checkIns: Array<{ date: Date; weight: numbe
         className="rounded-2xl border border-border-strong bg-surface-2 p-5"
         style={{ boxShadow: 'var(--shadow-card)' }}
       >
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
           Weight Trend
         </p>
         <div className="flex h-24 items-center justify-center text-sm text-muted-foreground">
@@ -76,7 +76,7 @@ function WeightChart({ checkIns }: { checkIns: Array<{ date: Date; weight: numbe
       className="rounded-2xl border border-border-strong bg-surface-2 p-5"
       style={{ boxShadow: 'var(--shadow-card)' }}
     >
-      <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
         Weight Trend
         <span className="ml-2 font-normal normal-case opacity-60">
           {n} check-in{n !== 1 ? 's' : ''}
@@ -295,7 +295,7 @@ export default async function PortalPage() {
           className="rounded-2xl border border-border-strong bg-surface-2 p-5"
           style={{ boxShadow: 'var(--shadow-card)' }}
         >
-          <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
             Progress
           </p>
           <div className="grid grid-cols-3 gap-4 text-center">
@@ -333,7 +333,7 @@ export default async function PortalPage() {
         className="rounded-2xl border border-border-strong bg-surface-2 p-5"
         style={{ boxShadow: 'var(--shadow-card)' }}
       >
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
           Latest Weigh-in
         </p>
         {latestCheckIn ? (
@@ -378,7 +378,7 @@ export default async function PortalPage() {
         className="rounded-2xl border border-border-strong bg-surface-2 p-5"
         style={{ boxShadow: 'var(--shadow-card)' }}
       >
-        <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
           Daily Targets
         </p>
 
@@ -439,7 +439,7 @@ export default async function PortalPage() {
       {/* ── Check-in history ───────────────────────────────────────────────── */}
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
             Recent Check-ins
           </p>
           <Link

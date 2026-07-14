@@ -164,7 +164,7 @@ const ACTION_GUIDANCE: Record<string, { dont: string[]; do: string[] }> = {
 
 function FlagBadge({ label, color }: { label: string; color: FlagColor }) {
   return (
-    <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap", FLAG_STYLES[color])}>
+    <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap", FLAG_STYLES[color])}>
       {label}
     </span>
   );
@@ -183,12 +183,12 @@ function InsightStat({ label, value, delta, color, icon: Icon }: {
     danger: "text-anomaly", warning: "text-warning", success: "text-success", neutral: "text-foreground",
   };
   return (
-    <div className={cn("rounded-lg border p-3", border[color])}>
-      <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+    <div className={cn("rounded-lg border p-3.5", border[color])}>
+      <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
         <Icon className="h-3.5 w-3.5" />{label}
       </div>
-      <p className={cn("mt-1 text-xl font-bold tabular-nums tracking-tight", text[color])}>{value}</p>
-      {delta && <p className="mt-0.5 text-[10px] text-muted-foreground">{delta}</p>}
+      <p className={cn("mt-1.5 font-mono text-2xl font-bold tabular-nums tracking-tight", text[color])}>{value}</p>
+      {delta && <p className="mt-1 text-[11px] text-muted-foreground">{delta}</p>}
     </div>
   );
 }
@@ -248,16 +248,17 @@ function LeftPanel({ clients, selectedId, onSelect }: {
     <aside className="flex w-80 shrink-0 flex-col border-r border-border bg-card xl:w-96">
       <div className="border-b border-border px-5 py-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground">Check-in Queue</h2>
+          <h2 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-secondary">Check-in Queue</h2>
           {pending > 0 && (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 font-mono text-[11px] font-bold tabular-nums text-accent-foreground">
               {pending}
             </span>
           )}
         </div>
-        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
           <Clock className="h-3 w-3" />
-          {clients.length} clients · {pending} pending review
+          <span className="font-mono tabular-nums text-secondary">{clients.length}</span> clients ·{" "}
+          <span className="font-mono tabular-nums text-secondary">{pending}</span> pending review
         </p>
       </div>
 
@@ -284,18 +285,18 @@ function LeftPanel({ clients, selectedId, onSelect }: {
             >
               <div className="flex items-start gap-3">
                 <div className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold",
                   isSelected ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
                 )}>
                   {client.initials}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <span className={cn("text-sm font-semibold", isSelected ? "text-foreground" : "text-foreground/80")}>
+                    <span className={cn("text-[15px] font-semibold tracking-[-0.005em]", isSelected ? "text-foreground" : "text-foreground/80")}>
                       {client.name}
                     </span>
                     {client.submittedAt && (
-                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                      <span className="flex items-center gap-1 font-mono text-[11px] tabular-nums text-muted-foreground">
                         <Clock className="h-2.5 w-2.5" />
                         {new Date(client.submittedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                       </span>
@@ -307,7 +308,7 @@ function LeftPanel({ clients, selectedId, onSelect }: {
                 </div>
               </div>
               {client.status === CHECK_IN_STATUS.Approved && (
-                <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground/70">
                   <CheckCircle2 className="h-3 w-3" />Reviewed
                 </div>
               )}
@@ -437,12 +438,12 @@ function AnalysisPanel({
       <div className="shrink-0 border-b border-border bg-card px-6 py-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-accent/20 to-muted text-sm font-bold text-accent">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-[15px] font-bold text-accent">
               {clientInput.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-semibold text-foreground">{clientInput.name}</h1>
+                <h1 className="font-display text-lg font-semibold tracking-tight text-foreground">{clientInput.name}</h1>
                 {isReview ? (
                   <span className="rounded-full border border-anomaly/30 bg-anomaly-muted px-2 py-0.5 text-[10px] font-semibold text-anomaly">
                     Safety Review
@@ -462,7 +463,7 @@ function AnalysisPanel({
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 text-[11px]">
+          <div className="flex flex-wrap gap-2 text-xs">
             {[
               { label: "Goal", value: clientInput.goal, icon: Target },
               { label: "Protein target", value: `${clientInput.targetProtein} g/day`, icon: Activity },
@@ -557,26 +558,28 @@ function AnalysisPanel({
           {/* Client's raw reflection — their own words, shown above the AI's take */}
           <ReflectionCard name={clientInput.name} reflection={latestCheckIn.clientReflection} />
 
-          {/* AI Synthesis card */}
+          {/* AI Synthesis card — the one hero: a single accent top edge marks it,
+              everything else stays on neutral surfaces. */}
           <section aria-labelledby="synthesis-heading">
-            <div className="rounded-xl border border-accent/35 bg-card shadow-lg shadow-accent/8 ring-1 ring-accent/15">
-              <div className="flex items-center gap-3 rounded-t-xl border-b border-accent/20 bg-gradient-to-r from-accent/12 to-transparent px-5 py-3.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent shadow-md shadow-accent/30">
-                  <Bot className="h-4 w-4 text-accent-foreground" strokeWidth={2} />
+            <div className="overflow-hidden rounded-xl border border-border bg-surface-2 shadow-sm">
+              <div className="h-0.5 bg-gradient-to-r from-accent to-accent/0" aria-hidden />
+              <div className="flex items-center gap-3 border-b border-border px-5 py-3.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-soft ring-1 ring-inset ring-accent/25">
+                  <Bot className="h-4 w-4 text-accent" strokeWidth={2} />
                 </div>
                 <div>
                   <h2 id="synthesis-heading" className="text-sm font-semibold text-foreground">AI Synthesis</h2>
                   <p className="text-[11px] text-muted-foreground">{clientInput.name} · latest check-in analysis</p>
                 </div>
-                <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent-foreground">
+                <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-accent ring-1 ring-inset ring-accent/25">
                   <Sparkles className="h-3 w-3" />Copilot
                 </span>
               </div>
               <div className="space-y-4 px-5 py-5">
                 {/* Claude-written coach summary */}
-                <p className="leading-7 text-foreground/90">{aiOutput.coachSummary}</p>
+                <p className="text-[15px] leading-7 text-foreground/90">{aiOutput.coachSummary}</p>
                 {/* Engine's plain-language weight vs goal verdict */}
-                <div className="rounded-lg border border-accent/20 bg-accent/6 px-4 py-3">
+                <div className="rounded-lg border border-accent/20 bg-accent-soft px-4 py-3">
                   <div className="flex items-start gap-2">
                     <Scale className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
                     <p className="text-sm text-foreground/90">
@@ -589,19 +592,20 @@ function AnalysisPanel({
             </div>
           </section>
 
-          {/* AI Recommendation card */}
+          {/* AI Recommendation card — secondary to the Synthesis hero: neutral
+              surface, with the semantic badge carrying the only colour. */}
           <section aria-labelledby="recommendation-heading">
-            <div className="rounded-xl border border-accent/40 bg-card shadow-lg shadow-accent/10 ring-1 ring-accent/20">
-              <div className="flex items-center gap-3 rounded-t-xl border-b border-accent/25 bg-gradient-to-r from-accent/15 to-transparent px-5 py-3.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/15">
-                  <Zap className="h-4 w-4 text-accent" strokeWidth={2} />
+            <div className="overflow-hidden rounded-xl border border-border bg-surface-2 shadow-sm">
+              <div className="flex items-center gap-3 border-b border-border px-5 py-3.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-3 text-secondary">
+                  <Zap className="h-4 w-4" strokeWidth={2} />
                 </div>
                 <div>
                   <h2 id="recommendation-heading" className="text-sm font-semibold text-foreground">AI Recommendation</h2>
                   <p className="text-[11px] text-muted-foreground">Proposed plan for next microcycle</p>
                 </div>
                 <div className={cn(
-                  "ml-auto flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold",
+                  "ml-auto flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
                   isReview
                     ? "border-anomaly/30 bg-anomaly-muted text-anomaly"
                     : "border-success/30 bg-success-muted text-success"
@@ -729,7 +733,7 @@ function AnalysisPanel({
                       <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
                         <MessageSquare className="h-3.5 w-3.5" />Client message — edit before approving
                       </div>
-                      <span className="text-[10px] tabular-nums text-muted-foreground/60">
+                      <span className="font-mono text-[11px] tabular-nums text-muted-foreground/70">
                         {editedMessage.length}/1000
                       </span>
                     </div>
@@ -808,11 +812,11 @@ function AnalysisPanel({
                   }
                 }}
                 className={cn(
-                  "inline-flex h-10 items-center gap-2 rounded-xl border px-5 text-sm font-semibold",
-                  "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  "inline-flex h-11 items-center gap-2 rounded-lg border px-5 text-sm font-semibold",
+                  "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                   manualEditOpen
-                    ? "border-border bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
-                    : "border-border bg-card text-foreground hover:border-accent/40 hover:bg-muted/60"
+                    ? "border-border bg-surface-3 text-secondary hover:bg-surface-3 hover:text-foreground"
+                    : "border-border bg-surface-2 text-foreground hover:border-border-strong hover:bg-surface-3"
                 )}
               >
                 {manualEditOpen ? (
@@ -827,14 +831,13 @@ function AnalysisPanel({
               onClick={() => onApprove(editedMacros, editedMessage.trim())}
               disabled={approving || approved || (isReview && !safetyAcknowledged) || !macrosValid || !messageValid || (macroWarnings.length > 0 && !macroWarningsAcknowledged)}
               className={cn(
-                "inline-flex h-10 items-center gap-2 rounded-xl px-6 text-sm font-bold",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                "transition-all active:scale-[0.98]",
+                "inline-flex h-11 items-center gap-2 rounded-lg px-6 text-sm font-semibold",
+                "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 approved
-                  ? "bg-success text-white shadow-md shadow-success/25"
+                  ? "bg-success text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12),0_2px_10px_-2px_rgba(52,211,153,0.4)]"
                   : isReview && !safetyAcknowledged
                   ? "cursor-not-allowed bg-muted text-muted-foreground"
-                  : "bg-accent text-accent-foreground shadow-md shadow-accent/25 hover:bg-accent/90 hover:shadow-lg hover:shadow-accent/30"
+                  : "bg-accent text-accent-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.10),0_2px_10px_-2px_rgba(77,124,254,0.45)] hover:bg-accent-hover active:bg-accent-press"
               )}
             >
               {approving ? (
@@ -866,12 +869,12 @@ function ApprovedPanel({
       {/* Client context bar */}
       <div className="shrink-0 border-b border-border bg-card px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-accent/20 to-muted text-sm font-bold text-accent">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-[15px] font-bold text-accent">
             {client.initials}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-semibold text-foreground">{client.name}</h1>
+              <h1 className="font-display text-lg font-semibold tracking-tight text-foreground">{client.name}</h1>
               <span className="rounded-full border border-success/30 bg-success-muted px-2 py-0.5 text-[10px] font-semibold text-success">
                 Approved
               </span>
@@ -900,22 +903,23 @@ function ApprovedPanel({
 
           {/* Saved AI synthesis */}
           <section>
-            <div className="rounded-xl border border-accent/35 bg-card shadow-lg shadow-accent/8 ring-1 ring-accent/15">
-              <div className="flex items-center gap-3 rounded-t-xl border-b border-accent/20 bg-gradient-to-r from-accent/12 to-transparent px-5 py-3.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent shadow-md shadow-accent/30">
-                  <Bot className="h-4 w-4 text-accent-foreground" strokeWidth={2} />
+            <div className="overflow-hidden rounded-xl border border-border bg-surface-2 shadow-sm">
+              <div className="h-0.5 bg-gradient-to-r from-accent to-accent/0" aria-hidden />
+              <div className="flex items-center gap-3 border-b border-border px-5 py-3.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-soft ring-1 ring-inset ring-accent/25">
+                  <Bot className="h-4 w-4 text-accent" strokeWidth={2} />
                 </div>
                 <div>
                   <h2 className="text-sm font-semibold text-foreground">AI Synthesis</h2>
                   <p className="text-[11px] text-muted-foreground">{client.name} · saved at approval</p>
                 </div>
-                <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-success/30 bg-success-muted px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-success">
+                <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-success/30 bg-success-muted px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-success">
                   <CheckCircle2 className="h-3 w-3" />Approved
                 </span>
               </div>
               <div className="px-5 py-5">
                 {savedAnalysis.coachSummary ? (
-                  <p className="leading-7 text-foreground/90">{savedAnalysis.coachSummary}</p>
+                  <p className="text-[15px] leading-7 text-foreground/90">{savedAnalysis.coachSummary}</p>
                 ) : (
                   <p className="text-sm italic text-muted-foreground">No coach summary was saved.</p>
                 )}
@@ -983,7 +987,7 @@ function ApprovedFallbackPanel({ client }: { client: QueueClientData }) {
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="shrink-0 border-b border-border bg-card px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-accent/20 to-muted text-sm font-bold text-accent">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-[15px] font-bold text-accent">
             {client.initials}
           </div>
           <div className="flex items-center gap-2">

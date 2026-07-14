@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ChevronRight, Clock, CircleDot } from "lucide-react";
+import { AlertTriangle, ChevronRight, CircleDot } from "lucide-react";
 import { Sidebar } from "@/components/sidebar";
 import { cn } from "@/lib/utils";
 import type { Triage } from "@/lib/coach-engine";
@@ -80,14 +80,15 @@ function SummaryBar({ rows }: { rows: TriageClientRow[] }) {
   ].filter(({ triage }) => counts[triage] > 0);
 
   return (
-    <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-      {items.map(({ triage, dot, label }) => (
-        <span key={triage} className="inline-flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-2.5 rounded-xl border border-border bg-surface-1 px-4 py-2.5">
+      {items.map(({ triage, dot, label }, i) => (
+        <span key={triage} className="inline-flex items-center gap-2.5">
+          {i > 0 && <span className="h-4 w-px bg-border" aria-hidden />}
           <span className={cn("h-2 w-2 rounded-full", dot)} aria-hidden />
-          <span>
-            <span className="font-semibold text-foreground">{counts[triage]}</span>{" "}
-            {label}
+          <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
+            {counts[triage]}
           </span>
+          <span className="text-xs text-muted-foreground">{label}</span>
         </span>
       ))}
     </div>
@@ -119,11 +120,11 @@ function ClientCard({
       {/* Coloured left stripe */}
       <div className={cn("w-1 shrink-0", STRIPE[row.triage])} aria-hidden />
 
-      <div className="flex min-w-0 flex-1 items-center gap-4 px-4 py-3.5">
+      <div className="flex min-w-0 flex-1 items-center gap-4 px-4 py-4">
         {/* Avatar */}
         <div
           className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold",
             AVATAR_BG[row.triage]
           )}
         >
@@ -133,10 +134,10 @@ function ClientCard({
         {/* Main info */}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-foreground">{row.name}</span>
+            <span className="text-[15px] font-semibold tracking-[-0.005em] text-foreground">{row.name}</span>
             <span
               className={cn(
-                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap",
+                "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap",
                 BADGE_STYLE[row.triage]
               )}
             >
@@ -144,37 +145,36 @@ function ClientCard({
               {TRIAGE_LABEL[row.triage]}
             </span>
           </div>
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+          <p className="mt-1 truncate text-[13px] text-muted-foreground">
             {row.goal}
             {row.currentPhase ? ` · ${row.currentPhase}` : ""}
           </p>
-          <p className={cn("mt-1 truncate text-xs font-medium", HEADLINE_COLOR[row.triage])}>
+          <p className={cn("mt-1 truncate text-[13px] font-medium", HEADLINE_COLOR[row.triage])}>
             {row.headline}
           </p>
         </div>
 
         {/* Days since check-in */}
-        <div className="hidden shrink-0 flex-col items-end gap-0.5 sm:flex">
+        <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
           {row.daysSinceLastCheckIn !== null ? (
             <>
               <span
                 className={cn(
-                  "flex items-center gap-1 text-xs font-semibold tabular-nums",
-                  row.daysSinceLastCheckIn > OVERDUE_DAYS ? "text-anomaly" : "text-muted-foreground"
+                  "flex items-baseline gap-1 font-mono text-[15px] font-semibold tabular-nums leading-none",
+                  row.daysSinceLastCheckIn > OVERDUE_DAYS ? "text-anomaly" : "text-foreground"
                 )}
               >
-                <Clock className="h-3 w-3" aria-hidden />
-                {row.daysSinceLastCheckIn}d ago
+                {row.daysSinceLastCheckIn}<span className="text-[11px] font-medium text-muted-foreground">d</span>
               </span>
-              <span className="text-[10px] text-muted-foreground">last check-in</span>
+              <span className="text-[11px] text-muted-foreground">last check-in</span>
             </>
           ) : (
             <>
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1 text-[13px] text-muted-foreground">
                 <CircleDot className="h-3 w-3" aria-hidden />
                 Never
               </span>
-              <span className="text-[10px] text-muted-foreground">no check-ins</span>
+              <span className="text-[11px] text-muted-foreground">no check-ins</span>
             </>
           )}
         </div>
@@ -212,14 +212,15 @@ function SectionLabel({ triage, count }: { triage: Triage; count: number }) {
     grey:   "No Data",
   };
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2.5">
       <span className={cn("h-2 w-2 rounded-full", DOT[triage])} aria-hidden />
-      <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+      <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
         {label[triage]}
       </h2>
-      <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+      <span className="min-w-[1.25rem] rounded-full bg-surface-2 px-1.5 py-0.5 text-center font-mono text-[11px] font-semibold tabular-nums text-muted-foreground">
         {count}
       </span>
+      <span className="h-px flex-1 bg-border/70" aria-hidden />
     </div>
   );
 }
@@ -247,13 +248,13 @@ export function TriageBoardClient({ rows }: { rows: TriageClientRow[] }) {
         <div className="mx-auto max-w-4xl px-6 py-8 lg:px-8">
 
           {/* Page header */}
-          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              <h1 className="font-display text-[28px] font-semibold leading-none tracking-[-0.01em] text-foreground">
                 Triage Board
               </h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                All clients sorted by urgency — people who need you most are at the top.
+              <p className="mt-2.5 text-sm text-muted-foreground">
+                All clients, sorted by who needs you most this week.
               </p>
             </div>
             <SummaryBar rows={rows} />
