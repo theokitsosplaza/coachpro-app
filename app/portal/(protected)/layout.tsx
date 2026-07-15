@@ -13,7 +13,7 @@ export default async function PortalProtectedLayout({
     <div className="min-h-screen bg-bg">
       <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-border bg-surface-1 px-4 sm:px-6">
         <span className="font-display text-sm font-semibold text-foreground">
-          Client Portal
+          VitaeForce
         </span>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">{client.name}</span>

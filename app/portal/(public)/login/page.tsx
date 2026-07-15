@@ -171,7 +171,7 @@ function PortalLoginForm() {
             <Mail className="h-5 w-5 text-foreground" strokeWidth={1.5} />
           </div>
           <h1 className="font-display text-xl font-semibold tracking-tight text-foreground">
-            Client Portal
+            VitaeForce
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Enter your email — we&apos;ll send you a sign-in code
