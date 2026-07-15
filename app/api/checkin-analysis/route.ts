@@ -124,10 +124,19 @@ export async function GET(request: Request) {
       // Pass the latest check-in's free-text reflection as tone-only context.
       // The system prompt forbids it from overriding the Synthesis or safety logic.
       aiOutput = await generateCoachOutput(clientInput, synthesis, latest.clientReflection);
-      await prisma.checkIn.update({
-        where: { id: latest.id },
-        data:  { aiSynthesis: JSON.stringify(aiOutput) },
-      });
+
+      // Cache ONLY a genuine success. generateCoachOutput never throws — on any
+      // failure (rate limit, timeout, bad JSON, missing key) it returns a safe
+      // fallback with an empty clientMessage (see safeFallback in lib/ai-coach.ts).
+      // Persisting that would permanently serve "[AI unavailable]" and never
+      // retry, so on failure we leave aiSynthesis null and regenerate next open.
+      // The fallback is still returned below, so this view degrades gracefully.
+      if (aiOutput.clientMessage.trim().length > 0) {
+        await prisma.checkIn.update({
+          where: { id: latest.id },
+          data:  { aiSynthesis: JSON.stringify(aiOutput) },
+        });
+      }
     }
 
     // ---- 6. Return everything the UI needs --------------------------------
