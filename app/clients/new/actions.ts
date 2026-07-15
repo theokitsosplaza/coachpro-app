@@ -51,7 +51,7 @@ function parseAndValidate(
   const proteinRaw   = formData.get('targetProtein') as string
   const carbsRaw     = formData.get('targetCarbs') as string
   const fatsRaw      = formData.get('targetFats') as string
-  const email        = ((formData.get('email') as string) ?? '').trim() || null
+  const email        = ((formData.get('email') as string) ?? '').trim().toLowerCase() || null
   const phone        = ((formData.get('phone') as string) ?? '').trim() || null
   const fiberRaw     = formData.get('targetFiber') as string
 
@@ -146,11 +146,25 @@ export async function updateClient(
 
   const current = await prisma.client.findUnique({
     where: { id: clientId, coachId: coach.id },
-    select: { email: true },
+    select: { email: true, authUserId: true },
   })
   if (!current) return { _form: 'Client not found.', _values }
 
-  const emailChanged = result.data.email !== current.email
+  // Compare normalized-to-normalized so a legacy mixed-case email that wasn't
+  // actually edited doesn't read as "changed" and needlessly drop the invite link.
+  const currentEmailNorm = current.email ? current.email.trim().toLowerCase() : null
+  const emailChanged = result.data.email !== currentEmailNorm
+
+  if (emailChanged && current.authUserId) {
+    // The Supabase auth user tied to the OLD email is intentionally left in place
+    // for now (no destructive deletion). It becomes an orphan until a follow-up
+    // cleanup task reconciles it — do NOT delete here.
+    console.warn('[updateClient] email changed — orphaning auth user', {
+      clientId,
+      orphanedAuthUserId: current.authUserId,
+    })
+  }
+
   const updateData = emailChanged ? { ...result.data, authUserId: null } : result.data
 
   try {

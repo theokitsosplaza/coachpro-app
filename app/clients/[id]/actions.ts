@@ -1,12 +1,33 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import type { User } from '@supabase/supabase-js'
 import { prisma } from '@/lib/prisma'
 import { verifyCoachSession } from '@/lib/dal'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
 export type InviteState = { error: string } | { success: true; message: string } | null
+
+const normalizeEmail = (e: string) => e.trim().toLowerCase()
+
+// Locate an existing Supabase auth user by email, paginating through ALL pages
+// (the old code only scanned the first 1000). Used as the authoritative
+// existence check when inviteUserByEmail fails — supabase-js v2 has no
+// getUserByEmail, and we need the user id to store on the Client row.
+async function findAuthUserByEmail(
+  admin: ReturnType<typeof createAdminClient>,
+  email: string,
+): Promise<User | null> {
+  const perPage = 1000
+  for (let page = 1; ; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage })
+    if (error) throw error
+    const match = data.users.find((u) => u.email?.toLowerCase() === email)
+    if (match) return match
+    if (data.users.length < perPage) return null // reached the last page
+  }
+}
 
 export async function inviteClient(
   _prev: InviteState,
@@ -23,62 +44,93 @@ export async function inviteClient(
   if (!client) return { error: 'Client not found.' }
   if (!client.email) return { error: 'This client has no email address.' }
 
-  const admin = createAdminClient()
-  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/portal/auth-callback`
+  // Normalize on compare so casing never misroutes an existing user (Supabase
+  // stores emails lowercased). Covers legacy rows saved before normalization.
+  const email = normalizeEmail(client.email)
 
-  // Look up whether a Supabase auth user already exists for this email before
-  // deciding which path to take. This is the only reliable way to detect the
-  // mismatch state where Supabase has the user but Client.authUserId is null.
-  const { data: listData, error: listError } = await admin.auth.admin.listUsers({
-    page: 1,
-    perPage: 1000,
-  })
-  if (listError) {
-    console.error('[inviteClient] listUsers failed:', listError.message, { status: listError.status })
-    return { error: 'Failed to check invite status. Please try again.' }
+  // Collision guard 1 — never bind a client to the coach's own auth identity.
+  if (coach.email && normalizeEmail(coach.email) === email) {
+    return {
+      error: 'This email belongs to your coach account. Use a different email for the client.',
+    }
   }
 
-  const existingUser = listData.users.find((u) => u.email === client.email) ?? null
+  const admin = createAdminClient()
+  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/portal/auth-callback`
 
   let authUserId: string
   let message: string
 
-  if (!existingUser) {
-    // Branch A: no Supabase auth user — create one and send the invite email.
-    // Also handles the stale-link edge case: if a previously linked Supabase
-    // user was deleted, the lookup returns null here and we recreate cleanly.
-    const { data, error } = await admin.auth.admin.inviteUserByEmail(client.email, {
-      redirectTo,
-    })
-    if (error) {
-      console.error('[inviteClient] inviteUserByEmail failed:', error.message, { status: error.status, name: error.name })
-      return { error: 'Failed to send invite. Please try again.' }
-    }
-    authUserId = data.user.id
+  // Try to create + invite. The existing-user path is decided by GROUND TRUTH
+  // (an authoritative user lookup), not by parsing the invite error's shape —
+  // so which code Supabase returns for a duplicate email is irrelevant.
+  const { data: invited, error: inviteError } =
+    await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
+
+  if (!inviteError) {
+    // Brand-new user: freshly minted id, so no collision with an existing
+    // Client row (or the coach) is possible.
+    authUserId = invited.user.id
     message = 'Invite sent!'
   } else {
-    // Branch B: Supabase user already exists — send a fresh magic link.
-    // Covers: normal resend, mismatch (authUserId null in our DB), and
-    // fully-registered clients who need a new login link.
-    // Setting authUserId from the lookup result repairs any DB mismatch.
-    authUserId = existingUser.id
+    // Rate limiting deserves its own message regardless of path.
+    if (inviteError.status === 429 || inviteError.code === 'over_email_send_rate_limit') {
+      return { error: 'Too many emails sent recently. Please wait a minute and try again.' }
+    }
 
-    const supabase = await createClient()
-    const { error } = await supabase.auth.signInWithOtp({
-      email: client.email,
-      options: { shouldCreateUser: false, emailRedirectTo: redirectTo },
-    })
-    if (error) {
-      console.error('[inviteClient] signInWithOtp failed:', error.message, { status: error.status, name: error.name })
+    // Any other invite error → verify whether the user actually exists. If it
+    // does, fall back to a magic link; if it doesn't, the error was real.
+    let existingUser: User | null
+    try {
+      existingUser = await findAuthUserByEmail(admin, email)
+    } catch (err) {
+      console.error('[inviteClient] listUsers failed:', err)
+      return { error: 'Failed to check invite status. Please try again.' }
+    }
+    if (!existingUser) {
+      console.error('[inviteClient] invite failed and no existing user found:', inviteError.message, {
+        status: inviteError.status,
+        code: inviteError.code,
+      })
       return { error: 'Failed to send invite. Please try again.' }
     }
 
+    // Collision guard 2 — refuse if this identity already belongs to a DIFFERENT
+    // client. Prevents two Client rows sharing one authUserId (unique-constraint
+    // crash + cross-account data leak). Never half-complete.
+    const other = await prisma.client.findFirst({
+      where: { authUserId: existingUser.id, NOT: { id: client.id } },
+      select: { id: true },
+    })
+    if (other) {
+      return { error: 'This email is already linked to another client. Use a different email.' }
+    }
+
+    // Existing users can't be re-invited — send a fresh magic link instead.
+    const supabase = await createClient()
+    const { error: otpError } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false, emailRedirectTo: redirectTo },
+    })
+    if (otpError) {
+      if (otpError.status === 429 || otpError.code === 'over_email_send_rate_limit') {
+        return { error: 'Too many emails sent recently. Please wait a minute and try again.' }
+      }
+      console.error('[inviteClient] signInWithOtp failed:', otpError.message, {
+        status: otpError.status,
+        code: otpError.code,
+      })
+      return { error: 'Failed to send invite. Please try again.' }
+    }
+
+    authUserId = existingUser.id
     message = existingUser.email_confirmed_at
       ? 'Client already has portal access — a login link has been sent.'
       : 'Invite resent — the previous link has been replaced.'
   }
 
-  // Always write authUserId: repairs DB mismatches and keeps the link current.
+  // Write/repair the link. Collisions are pre-guarded above, so the unique
+  // constraint should never trip here; the catch stays as a safety net.
   try {
     await prisma.client.update({
       where: { id: client.id },
