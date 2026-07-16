@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 import { CHECK_IN_STATUS } from '@/lib/check-in-status';
+import { parseAttentionSignal } from '@/lib/attention-flag';
 
 export const dynamic = 'force-dynamic'
 
@@ -44,9 +45,14 @@ export async function POST(request: Request) {
       coachSummary?:    string;
       clientMessage?:   string;
       confirmedMacros?: { protein: number; carbs: number; fats: number } | null;
+      attention?:       unknown;
     };
 
     const { checkInId, coachSummary, clientMessage, confirmedMacros } = body;
+    // Re-validate the attention signal server-side. The client cannot smuggle a
+    // severity or a different flag — parseAttentionSignal only accepts
+    // { needsAttention: true, reason: <non-empty string> } and drops anything else.
+    const attention = parseAttentionSignal(body.attention);
 
     if (!checkInId || !coachSummary) {
       return NextResponse.json(
@@ -109,6 +115,7 @@ export async function POST(request: Request) {
           aiSynthesis: JSON.stringify({
             coachSummary,
             clientMessage: clientMessage ?? '',
+            attention,
           }),
           status: CHECK_IN_STATUS.Approved,
         },

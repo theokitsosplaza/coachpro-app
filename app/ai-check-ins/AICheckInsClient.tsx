@@ -28,6 +28,7 @@ import {
 import { Sidebar } from "@/components/sidebar";
 import { cn } from "@/lib/utils";
 import { CHECK_IN_STATUS, type CheckInStatus } from "@/lib/check-in-status";
+import { attentionFlag, type AttentionSignal } from "@/lib/attention-flag";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -47,6 +48,7 @@ export type QueueClientData = {
     clientReflection: string;
     macros: { protein: number; carbs: number; fats: number };
     approvedAt:       string;
+    attention:        AttentionSignal | null;
   } | null;
 };
 
@@ -102,6 +104,7 @@ type AnalysisResult = {
   aiOutput: {
     coachSummary: string;
     clientMessage: string;
+    attention: AttentionSignal | null;
   };
 };
 
@@ -892,6 +895,21 @@ function ApprovedPanel({
             </p>
           </div>
 
+          {/* Reflection attention flag saved at approval (if one was raised) */}
+          {(() => {
+            const flag = attentionFlag(savedAnalysis.attention);
+            if (!flag) return null;
+            return (
+              <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning-muted/40 p-3">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{flag.title}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{flag.detail}</p>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Client's raw reflection — their own words, shown above the AI's take */}
           <ReflectionCard name={client.name} reflection={savedAnalysis.clientReflection} />
 
@@ -1082,6 +1100,7 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
           coachSummary: analysis.aiOutput.coachSummary,
           clientMessage,
           confirmedMacros,
+          attention:    analysis.aiOutput.attention,
         }),
       });
       if (res.ok) {
@@ -1098,6 +1117,7 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
                 coachSummary:     analysis.aiOutput.coachSummary,
                 clientMessage,
                 clientReflection: analysis.latestCheckIn.clientReflection,
+                attention:        analysis.aiOutput.attention,
                 macros: {
                   protein: confirmedMacros?.protein ?? analysis.clientInput.targetProtein,
                   carbs:   confirmedMacros?.carbs   ?? analysis.clientInput.targetCarbs,

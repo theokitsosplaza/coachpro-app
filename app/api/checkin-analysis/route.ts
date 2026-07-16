@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { analyzeClient, type ClientInput, type CheckInInput } from '@/lib/coach-engine';
-import { generateCoachOutput } from '@/lib/ai-coach';
+import { generateCoachOutput, type AiCoachOutput } from '@/lib/ai-coach';
+import { appendAttentionFlag, parseAttentionSignal } from '@/lib/attention-flag';
 import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic'
@@ -107,13 +108,17 @@ export async function GET(request: Request) {
     // On first view: call Claude, save result. On subsequent views: read the
     // saved result, skip the Claude call entirely. Cache is cleared whenever
     // the check-in is edited (see updateCoachCheckIn action).
-    let aiOutput: { coachSummary: string; clientMessage: string } | null = null;
+    let aiOutput: AiCoachOutput | null = null;
 
     if (latest.aiSynthesis) {
       try {
         const cached = JSON.parse(latest.aiSynthesis) as Record<string, unknown>;
         if (typeof cached.coachSummary === 'string' && typeof cached.clientMessage === 'string') {
-          aiOutput = { coachSummary: cached.coachSummary, clientMessage: cached.clientMessage };
+          aiOutput = {
+            coachSummary:  cached.coachSummary,
+            clientMessage: cached.clientMessage,
+            attention:     parseAttentionSignal(cached.attention),
+          };
         }
       } catch (err) {
         console.error('[checkin-analysis] malformed cached aiSynthesis for check-in', latest.id, '— regenerating', err);
@@ -139,7 +144,16 @@ export async function GET(request: Request) {
       }
     }
 
-    // ---- 6. Return everything the UI needs --------------------------------
+    // ---- 6. Merge the reflection attention flag into the coach's flag list --
+    // appendAttentionFlag caps severity at 'warning' (see lib/attention-flag).
+    // The detail view keeps the engine triage untouched — only the roster board
+    // nudges triage to yellow (see app/triage/page.tsx).
+    const responseSynthesis = {
+      ...synthesis,
+      flags: appendAttentionFlag(synthesis.flags, aiOutput?.attention),
+    };
+
+    // ---- 7. Return everything the UI needs --------------------------------
     return NextResponse.json({
       clientInput,
       latestCheckInId: latest.id,
@@ -151,7 +165,7 @@ export async function GET(request: Request) {
         status:           latest.status,
         clientReflection: latest.clientReflection,
       },
-      synthesis,
+      synthesis: responseSynthesis,
       aiOutput,
     });
 

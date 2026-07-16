@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { AICheckInsClient, type QueueClientData } from './AICheckInsClient';
 import { verifyCoachSession } from '@/lib/dal';
 import { CHECK_IN_STATUS } from '@/lib/check-in-status';
+import { parseAttentionSignal } from '@/lib/attention-flag';
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -38,6 +39,7 @@ export default async function AICheckInsPage() {
           const parsed = JSON.parse(latest.aiSynthesis) as {
             coachSummary?: string;
             clientMessage?: string;
+            attention?: unknown;
           };
           savedAnalysis = {
             checkInId:        latest.id,
@@ -52,6 +54,7 @@ export default async function AICheckInsPage() {
             approvedAt: new Date(latest.date).toLocaleDateString('en-GB', {
               day: 'numeric', month: 'short', year: 'numeric',
             }),
+            attention: parseAttentionSignal(parsed.attention),
           };
         } catch (err) {
           console.error('[ai-check-ins] malformed aiSynthesis for check-in', latest.id, err);

@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { analyzeClient, type ClientInput, type CheckInInput, type Triage } from '@/lib/coach-engine';
 import { TriageBoardClient, type TriageClientRow } from './TriageBoardClient';
 import { OVERDUE_DAYS, TRIAGE_ORDER } from '@/lib/triage-constants';
+import { parseAttentionSignal, nudgeTriage } from '@/lib/attention-flag';
 import { verifyCoachSession } from '@/lib/dal';
 
 function daysSince(date: Date): number {
@@ -91,13 +92,27 @@ export default async function TriagePage() {
 
       const synthesis = analyzeClient(clientInput, checkInInputs);
 
+      // Best-effort roster nudge: if the latest check-in already has a cached AI
+      // attention flag (from the client's reflection), raise triage to at least
+      // yellow — never red, never a downgrade. This only reflects check-ins that
+      // have already been analysed (lazy AI generation on first open); a
+      // fast-follow will run the assessment at submission time so the board can
+      // surface distress before the coach opens the check-in.
+      let triage = synthesis.triage;
+      if (latest.aiSynthesis) {
+        try {
+          const cached = JSON.parse(latest.aiSynthesis) as Record<string, unknown>;
+          if (parseAttentionSignal(cached.attention)) triage = nudgeTriage(triage);
+        } catch { /* malformed cache — keep the engine triage */ }
+      }
+
       return {
         id: c.id,
         name: c.name,
         initials: initials(c.name),
         goal: c.goal,
         currentPhase: c.currentPhase,
-        triage: synthesis.triage,
+        triage,
         daysSinceLastCheckIn: days,
         headline: synthesis.recommendation.headline,
       };
