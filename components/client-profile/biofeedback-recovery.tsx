@@ -99,43 +99,6 @@ function RecoveryGauge({
 }
 
 export function BiofeedbackRecovery({ profile }: BiofeedbackRecoveryProps) {
-  const gauges: GaugeConfig[] = [
-    {
-      label: "Sleep quality",
-      value: profile.sleepQuality,
-      max: 10,
-      sublabel: profile.sleepLabel,
-      icon: Moon,
-      goodBelow: 7.5,
-      warningAbove: 4, // low sleep is a warning (inverted — low = bad here)
-    },
-    {
-      label: "Stress level",
-      value: profile.stressLevel,
-      max: 10,
-      sublabel: profile.stressLabel,
-      icon: Activity,
-      warningAbove: 7,
-      goodBelow: 4,
-    },
-    {
-      label: "Hunger / digestion",
-      value: profile.hungerScore,
-      max: profile.hungerMax,
-      sublabel: profile.hungerLabel,
-      icon: Salad,
-      warningAbove: undefined,
-      goodBelow: undefined,
-    },
-  ];
-
-  // Sleep: low value = bad (invert the warning logic for sleep)
-  const sleepGauge: GaugeConfig = {
-    ...gauges[0],
-    warningAbove: undefined,
-    goodBelow: undefined,
-  };
-
   function sleepCardClass(v: number) {
     if (v < 5) return "border-anomaly/30 bg-anomaly-muted/20";
     if (v < 7) return "border-warning/35 bg-warning-muted/25";

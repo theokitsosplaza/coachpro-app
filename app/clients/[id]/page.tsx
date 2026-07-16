@@ -434,7 +434,7 @@ export default async function ClientProfilePage({
               <ClipboardList className="h-8 w-8 text-muted-foreground/40" strokeWidth={1.5} />
               <p className="text-sm font-semibold text-muted-foreground">No analysis yet</p>
               <p className="max-w-[220px] text-xs text-muted-foreground">
-                Once {client.name} submits their first couple of check-ins, you'll see weight
+                Once {client.name} submits their first couple of check-ins, you&apos;ll see weight
                 trends, adherence, and AI analysis here.
               </p>
               <Link

@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
-import { inviteClient, type InviteState } from './actions'
+import { inviteClient } from './actions'
 
 interface Props {
   clientId: string
