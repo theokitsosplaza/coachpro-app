@@ -141,6 +141,17 @@ export const ENGINE_CONFIG = {
   floorFats: 40, // never propose fats below this (hormonal health)
   floorCarbs: 50, // never propose carbs below this
 
+  // --- Wellbeing attention thresholds (single-week, absolute) ---
+  // Soft signals that sit BELOW the hard safety brakes: they flag a client for a
+  // look (triage -> yellow via a 'warning' flag) but never null macros or force
+  // 'review'. They fill the gap between "fine" and "collapse". These mirror the
+  // UI's red stat-card bands (see AICheckInsClient sleepColor/fatigueColor) so a
+  // red card always has a matching flag. Tune with real coaches.
+  wellbeing: {
+    sleepLowAtOrBelow: 4,    // latest sleepScore <= this  -> SLEEP_LOW (warning)
+    fatigueHighAtOrAbove: 7, // latest fatigueScore >= this -> FATIGUE_HIGH (warning)
+  },
+
   // --- HARD SAFETY BRAKES (the AI can never override these) ---
   safety: {
     rapidLossRatePerWeek: 1.5, // % bodyweight/week -> too fast
@@ -313,6 +324,51 @@ function fatigueFlag(checkins: CheckInInput[]): Flag | null {
     };
   }
   return null;
+}
+
+// ===========================================================================
+// 6b. WELLBEING ATTENTION FLAGS  (single-week absolute; warning, not safety)
+// ===========================================================================
+// These read only the LATEST check-in — this week's self-report — mirroring how
+// weight.latest is taken from the most recent check-in. They raise a 'warning'
+// (enough to turn the roster tile yellow and surface a card) WITHOUT touching
+// the recommendation or proposed macros. They sit one rung below the hard
+// brakes in safetyBrakes(). Contrast:
+//   SAFETY_SLEEP_COLLAPSE (safety): sleep <= 4 for 2 weeks running -> red/brake
+//   SLEEP_LOW (warning):            this week's sleep <= 4          -> yellow/look
+//   FATIGUE_RISING (warning): fatigue trending up >= 2 pts over the window
+//   FATIGUE_HIGH (warning):   this week's fatigue >= 7 (absolute)
+
+function sleepLowFlag(latest: CheckInInput | null): Flag | null {
+  if (!latest) return null;
+  const threshold = ENGINE_CONFIG.wellbeing.sleepLowAtOrBelow;
+  if (latest.sleepScore > threshold) return null;
+  return {
+    code: 'SLEEP_LOW',
+    severity: 'warning',
+    title: 'Poor sleep reported',
+    detail:
+      `Client reported sleep at ${latest.sleepScore}/10 this week, at or below the ` +
+      `${threshold}/10 attention line. Check recovery, stress, and lifestyle before ` +
+      `pushing the plan harder.`,
+    suggestedAction: 'hold',
+  };
+}
+
+function fatigueHighFlag(latest: CheckInInput | null): Flag | null {
+  if (!latest) return null;
+  const threshold = ENGINE_CONFIG.wellbeing.fatigueHighAtOrAbove;
+  if (latest.fatigueScore < threshold) return null;
+  return {
+    code: 'FATIGUE_HIGH',
+    severity: 'warning',
+    title: 'High fatigue reported',
+    detail:
+      `Client reported fatigue at ${latest.fatigueScore}/10 this week, at or above the ` +
+      `${threshold}/10 attention line. Weigh recovery and training load before any ` +
+      `macro change.`,
+    suggestedAction: 'hold',
+  };
 }
 
 // ===========================================================================
@@ -567,6 +623,21 @@ export function analyzeClient(client: ClientInput, allCheckins: CheckInInput[]):
   // ---- Fatigue trend ----
   const fatigue = fatigueFlag(used);
   if (fatigue) flags.push(fatigue);
+
+  // ---- Wellbeing attention flags (this week's self-report) ----
+  // Single-week absolute reads on the latest check-in. Warning-level: they turn
+  // the tile yellow and surface a card, but never touch primaryAction or
+  // proposedMacros. SLEEP_LOW is suppressed when the hard sleep-collapse brake
+  // already fired, so the coach never sees a red "collapsed" card and a
+  // redundant yellow "poor sleep" card for the same signal. FATIGUE_RISING and
+  // FATIGUE_HIGH are allowed to coexist — they say different things (trending up
+  // vs high right now).
+  const sleepAlreadyFlagged = flags.some((f) => f.code === 'SAFETY_SLEEP_COLLAPSE');
+  const sleepLow = sleepAlreadyFlagged ? null : sleepLowFlag(latest);
+  if (sleepLow) flags.push(sleepLow);
+
+  const fatigueHigh = fatigueHighFlag(latest);
+  if (fatigueHigh) flags.push(fatigueHigh);
 
   // ---- Protein floor (muscle retention — matters most on a cut) ----
   if (adherence.status !== 'unknown' && adherence.proteinRatio < ENGINE_CONFIG.poorAdherenceBelow) {
