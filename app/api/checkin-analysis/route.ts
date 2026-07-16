@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { analyzeClient, type ClientInput, type CheckInInput } from '@/lib/coach-engine';
+import { analyzeClient, rationaleForFinalWarnings, type ClientInput, type CheckInInput } from '@/lib/coach-engine';
 import { generateCoachOutput, type AiCoachOutput } from '@/lib/ai-coach';
 import { appendAttentionFlag, parseAttentionSignal } from '@/lib/attention-flag';
 import { createClient } from '@/lib/supabase/server';
@@ -147,10 +147,21 @@ export async function GET(request: Request) {
     // ---- 6. Merge the reflection attention flag into the coach's flag list --
     // appendAttentionFlag caps severity at 'warning' (see lib/attention-flag).
     // The detail view keeps the engine triage untouched — only the roster board
-    // nudges triage to yellow (see app/triage/page.tsx).
+    // nudges triage to yellow (see app/triage/page.tsx). We also re-express the
+    // on-track rationale for the FINAL warning count so the recommendation box
+    // never reads "no issues" while the attention flag card is showing.
+    const finalFlags = appendAttentionFlag(synthesis.flags, aiOutput?.attention);
+    const engineWarnings = synthesis.flags.filter((f) => f.severity === 'warning').length;
+    const finalWarnings  = finalFlags.filter((f) => f.severity === 'warning').length;
     const responseSynthesis = {
       ...synthesis,
-      flags: appendAttentionFlag(synthesis.flags, aiOutput?.attention),
+      flags: finalFlags,
+      recommendation: {
+        ...synthesis.recommendation,
+        rationale: rationaleForFinalWarnings(
+          synthesis.recommendation.rationale, engineWarnings, finalWarnings,
+        ),
+      },
     };
 
     // ---- 7. Return everything the UI needs --------------------------------

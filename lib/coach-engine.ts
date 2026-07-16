@@ -404,6 +404,31 @@ function increaseMacros(target: MacroSet, pct: number): MacroSet {
 }
 
 // ===========================================================================
+// 7b. ON-TRACK RATIONALE  (acknowledge warnings without contradicting them)
+// ===========================================================================
+// The "on track / hold" verdict must never read "no issues" while warning cards
+// are on screen. onTrackRationale() is the single source of that copy;
+// rationaleForFinalWarnings() lets the route re-express it for the FINAL warning
+// count once downstream flags (the reflection attention flag) are merged in,
+// touching ONLY the on-track fallback — every other rationale is returned as-is.
+
+export function onTrackRationale(warningCount: number): string {
+  if (warningCount <= 0) return 'No issues detected in the current window.';
+  const noun = warningCount === 1 ? 'item' : 'items';
+  return `On track, but ${warningCount} ${noun} flagged for your attention.`;
+}
+
+export function rationaleForFinalWarnings(
+  engineRationale: string,
+  engineWarningCount: number,
+  finalWarningCount: number,
+): string {
+  return engineRationale === onTrackRationale(engineWarningCount)
+    ? onTrackRationale(finalWarningCount)
+    : engineRationale;
+}
+
+// ===========================================================================
 // 8. MAIN ENTRY POINT
 // ===========================================================================
 
@@ -666,7 +691,7 @@ export function analyzeClient(client: ClientInput, allCheckins: CheckInInput[]):
     rationale =
       primaryAction === 'await_data'
         ? 'Waiting on more check-ins to read a reliable trend.'
-        : 'No issues detected in the current window.';
+        : onTrackRationale(flags.filter((f) => f.severity === 'warning').length);
   }
 
   // ---- Triage colour for the roster board ----
