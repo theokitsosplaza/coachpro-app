@@ -251,7 +251,7 @@ function InviteCoachSection() {
 
 // ── Tab: General ──────────────────────────────────────────────────────────────
 
-function GeneralTab({ initialProfile }: { initialProfile: CoachProfile }) {
+function GeneralTab({ initialProfile, isAdmin }: { initialProfile: CoachProfile; isAdmin: boolean }) {
   const [profile, setProfile] = useState(initialProfile);
   const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -340,7 +340,7 @@ function GeneralTab({ initialProfile }: { initialProfile: CoachProfile }) {
         </div>
       </SectionCard>
 
-      <InviteCoachSection />
+      {isAdmin && <InviteCoachSection />}
     </div>
   );
 }
@@ -761,7 +761,7 @@ const TABS: {
 
 // ── Client shell ──────────────────────────────────────────────────────────────
 
-export function SettingsClient({ initialProfile }: { initialProfile: CoachProfile }) {
+export function SettingsClient({ initialProfile, isAdmin }: { initialProfile: CoachProfile; isAdmin: boolean }) {
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
 
   return (
@@ -828,7 +828,7 @@ export function SettingsClient({ initialProfile }: { initialProfile: CoachProfil
                 })()}
               </div>
 
-              {activeTab === "general"       && <GeneralTab initialProfile={initialProfile} />}
+              {activeTab === "general"       && <GeneralTab initialProfile={initialProfile} isAdmin={isAdmin} />}
               {activeTab === "copilot"       && <CopilotTab />}
               {activeTab === "billing"       && <BillingTab />}
               {activeTab === "notifications" && <NotificationsTab />}

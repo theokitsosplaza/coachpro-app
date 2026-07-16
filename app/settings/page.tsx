@@ -6,6 +6,7 @@ export default async function SettingsPage() {
 
   return (
     <SettingsClient
+      isAdmin={coach.isAdmin}
       initialProfile={{
         name:         coach.name         ?? '',
         email:        coach.email,

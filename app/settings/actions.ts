@@ -33,7 +33,13 @@ export async function inviteCoach(
   _prev: InviteCoachState,
   formData: FormData,
 ): Promise<InviteCoachState> {
-  await verifyCoachSession()
+  const coach = await verifyCoachSession()
+  // Admin-only: reject even a non-admin who calls this action directly. The UI
+  // also hides the invite form, but that is only a secondary convenience — this
+  // check is the real gate.
+  if (!coach.isAdmin) {
+    return { error: 'You do not have permission to invite coaches.' }
+  }
 
   const email = (formData.get('email') as string | null)?.trim() ?? ''
   const name  = (formData.get('name')  as string | null)?.trim() ?? ''

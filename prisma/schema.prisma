@@ -15,6 +15,7 @@ model Coach {
   name         String?
   businessName String?
   website      String?
+  isAdmin      Boolean         @default(false)   // platform admin — gates inviteCoach
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
