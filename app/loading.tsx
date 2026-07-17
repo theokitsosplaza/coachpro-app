@@ -50,7 +50,7 @@ export default function RootLoading() {
           {/* Stat cards */}
           <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="rounded-xl border border-border bg-card p-5">
+              <div key={i} className="rounded-xl border border-hair bg-surface p-5">
                 <Skeleton className="h-3 w-24" />
                 <Skeleton className="mt-4 h-8 w-16" />
                 <Skeleton className="mt-3 h-2.5 w-20" />
@@ -60,7 +60,7 @@ export default function RootLoading() {
 
           {/* Attention list + side column */}
           <div className="grid gap-6 lg:grid-cols-3">
-            <div className="rounded-xl border border-border bg-card p-5 lg:col-span-2">
+            <div className="rounded-xl border border-hair bg-surface p-5 lg:col-span-2">
               <Skeleton className="h-3 w-32" />
               <div className="mt-5 space-y-4">
                 {Array.from({ length: 4 }).map((_, i) => (
@@ -76,7 +76,7 @@ export default function RootLoading() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-card p-5">
+            <div className="rounded-xl border border-hair bg-surface p-5">
               <Skeleton className="h-3 w-28" />
               {/* Recent check-ins */}
               <div className="mt-5 space-y-4">

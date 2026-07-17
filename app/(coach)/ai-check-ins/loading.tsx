@@ -14,8 +14,8 @@ export default function AiCheckInsLoading() {
 
       <div className="flex min-w-0 flex-1 overflow-hidden">
         {/* Queue column */}
-        <aside className="flex w-80 shrink-0 flex-col border-r border-border bg-card xl:w-96">
-          <div className="border-b border-border px-5 py-4">
+        <aside className="flex w-80 shrink-0 flex-col border-r border-hair bg-surface xl:w-96">
+          <div className="border-b border-hair px-5 py-4">
             <Skeleton className="h-4 w-32" />
             <Skeleton className="mt-2 h-3 w-20" />
           </div>
@@ -39,14 +39,14 @@ export default function AiCheckInsLoading() {
             <Skeleton className="h-6 w-56 max-w-full" />
             <Skeleton className="mt-3 h-3 w-40" />
 
-            <div className="mt-8 rounded-xl border border-border bg-card p-6">
+            <div className="mt-8 rounded-xl border border-hair bg-surface p-6">
               <Skeleton className="h-3 w-28" />
               <Skeleton className="mt-4 h-3 w-full" />
               <Skeleton className="mt-2 h-3 w-full" />
               <Skeleton className="mt-2 h-3 w-3/4" />
             </div>
 
-            <div className="mt-6 rounded-xl border border-border bg-card p-6">
+            <div className="mt-6 rounded-xl border border-hair bg-surface p-6">
               <Skeleton className="h-3 w-32" />
               <Skeleton className="mt-4 h-3 w-full" />
               <Skeleton className="mt-2 h-3 w-full" />

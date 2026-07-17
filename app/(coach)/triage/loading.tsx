@@ -26,7 +26,7 @@ export default function TriageLoading() {
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="flex items-center gap-4 overflow-hidden rounded-xl border border-border bg-card p-4"
+                className="flex items-center gap-4 overflow-hidden rounded-xl border border-hair bg-surface p-4"
               >
                 <Skeleton className="h-10 w-1 shrink-0 rounded-full" />
                 <Skeleton className="h-10 w-10 shrink-0 rounded-full" />

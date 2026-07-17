@@ -25,11 +25,11 @@ export default function ClientsLoading() {
       <Skeleton className="mb-4 h-10 w-full rounded-lg" />
 
       {/* Roster rows */}
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="overflow-hidden rounded-xl border border-hair bg-surface">
         {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
-            className="flex items-center gap-4 border-b border-border px-5 py-4 last:border-b-0"
+            className="flex items-center gap-4 border-b border-hair px-5 py-4 last:border-b-0"
           >
             <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
             <div className="min-w-0 flex-1">
