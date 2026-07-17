@@ -3,15 +3,16 @@
 import Link from "next/link";
 import {
   Users, AlertTriangle, BarChart3,
-  TrendingUp, TrendingDown, Minus,
-  UserPlus, ArrowRight,
-  CheckCircle2, Clock, ChevronRight,
+  Plus, CheckCircle2, ChevronRight,
 } from "lucide-react";
 import { Sidebar } from "@/components/sidebar";
 import { buttonClass } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 // ── Exported types (consumed by the server component) ─────────────────────────
+// NOTE: this is the data contract with app/page.tsx — its shape is unchanged by
+// the reskin. Presentation below rebinds these same fields; it never invents or
+// drops data.
 
 export type AttentionClient = {
   id: string;
@@ -42,11 +43,9 @@ type TriageUrgency = "critical" | "warning";
 type TriageItem = {
   id: string;
   urgency: TriageUrgency;
-  icon: typeof AlertTriangle;
-  title: string;
+  name: string;
   detail: string;
-  action: string;
-  href?: string;
+  href: string;
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -64,109 +63,105 @@ function formatDate() {
   });
 }
 
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 function toTriageItem(ac: AttentionClient): TriageItem {
   return {
     id: ac.id,
     urgency: ac.triage === "red" ? "critical" : "warning",
-    icon: AlertTriangle,
-    title: ac.name,
+    name: ac.name,
     detail: ac.headline,
-    action: "Review",
+    // Unchanged route — opens the client's review in the AI hub.
     href: `/ai-check-ins?clientId=${encodeURIComponent(ac.id)}`,
   };
 }
 
-const STATUS_CONFIG = {
-  on_track:       { label: "On Track",     dot: "bg-success", text: "text-success" },
-  pending_review: { label: "Pending",       dot: "bg-warning", text: "text-warning" },
-  action_needed:  { label: "Action Needed", dot: "bg-anomaly", text: "text-anomaly" },
-};
-
-const URGENCY_BORDER: Record<TriageUrgency, string> = {
-  critical: "border-l-anomaly",
-  warning:  "border-l-warning",
-};
-
-const URGENCY_ICON_COLOR: Record<TriageUrgency, string> = {
-  critical: "text-anomaly",
-  warning:  "text-warning",
-};
-
-const URGENCY_ACTION: Record<TriageUrgency, string> = {
-  critical: "border-anomaly/30 text-anomaly hover:bg-anomaly-muted/50",
-  warning:  "border-warning/30 text-warning hover:bg-warning-muted/50",
+// Left-bar + avatar tint per urgency. The reference only ever shows warnings
+// (amber); criticals get the red treatment so the red/yellow triage split the
+// engine produces stays visible rather than flattening to one colour.
+const URGENCY: Record<TriageUrgency, { bar: string; avatar: string }> = {
+  critical: { bar: "border-l-red",   avatar: "bg-[color-mix(in_oklab,var(--red)_18%,#14161B)] text-red" },
+  warning:  { bar: "border-l-amber", avatar: "bg-[color-mix(in_oklab,var(--amber)_18%,#14161B)] text-amber" },
 };
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function MetricCard({ icon: Icon, label, value, delta, deltaDir, sub }: {
-  icon: typeof Users; label: string; value: string;
-  delta: string; deltaDir: "up" | "down" | "flat"; sub?: string;
+function StatCard({ icon: Icon, tone, eyebrow, label, value, cap }: {
+  icon: typeof Users;
+  tone: "accent" | "amber" | "green";
+  eyebrow: string; label: string; value: string; cap: string;
 }) {
-  const DeltaIcon = deltaDir === "up" ? TrendingUp : deltaDir === "down" ? TrendingDown : Minus;
-  const deltaColor = deltaDir === "up" ? "text-success" : deltaDir === "down" ? "text-anomaly" : "text-muted-foreground";
+  const tile = {
+    accent: "bg-[color-mix(in_oklab,var(--accent)_15%,transparent)] text-accent-lite",
+    amber:  "bg-[color-mix(in_oklab,var(--amber)_15%,transparent)] text-amber",
+    green:  "bg-[color-mix(in_oklab,var(--green)_15%,transparent)] text-green",
+  }[tone];
+  const valueColor = { accent: "text-text", amber: "text-amber", green: "text-green" }[tone];
   return (
-    <div className="group rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-colors group-hover:bg-accent/10 group-hover:text-accent">
-          <Icon className="h-4 w-4" strokeWidth={2} />
+    <div className="rounded-2xl border border-hair bg-surface p-[22px] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+      <div className="mb-5 flex items-center justify-between gap-2.5">
+        <div className={cn("flex h-[38px] w-[38px] items-center justify-center rounded-[10px]", tile)}>
+          <Icon className="h-[19px] w-[19px]" strokeWidth={1.9} />
         </div>
-        <span className={cn("flex items-center gap-1 text-xs font-semibold", deltaColor)}>
-          <DeltaIcon className="h-3.5 w-3.5" />{delta}
-        </span>
+        <span className="text-right text-[11px] font-semibold uppercase tracking-wide text-muted-2">{eyebrow}</span>
       </div>
-      <p className="mt-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-1 font-mono text-3xl font-bold tabular-nums tracking-tight text-foreground">{value}</p>
-      {sub && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}
+      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-1">{label}</p>
+      <div className="flex items-baseline gap-2.5">
+        <span className={cn("font-mono text-[40px] font-medium leading-none tracking-[-0.02em]", valueColor)}>{value}</span>
+        <span className="text-[12.5px] text-muted-2">{cap}</span>
+      </div>
     </div>
   );
 }
 
-function TriageCard({ item }: { item: TriageItem }) {
-  const Icon = item.icon;
-  const content = (
-    <div className={cn(
-      "group flex items-start gap-4 rounded-xl border border-border bg-card px-5 py-4 shadow-sm transition-all",
-      "border-l-4 hover:border-border/80 hover:shadow-md",
-      URGENCY_BORDER[item.urgency]
-    )}>
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center">
-        <Icon className={cn("h-5 w-5", URGENCY_ICON_COLOR[item.urgency])} strokeWidth={2} />
+function AttentionRow({ item }: { item: TriageItem }) {
+  const u = URGENCY[item.urgency];
+  return (
+    <Link
+      href={item.href}
+      className={cn(
+        "group flex items-center gap-3.5 rounded-xl border border-white/[0.06] border-l-[3px] bg-surface-deep px-4 py-3.5",
+        "transition-[background-color,transform] hover:translate-x-0.5 hover:bg-[#151820]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring",
+        u.bar
+      )}
+    >
+      <div className={cn("flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] text-[13px] font-bold", u.avatar)}>
+        {initialsOf(item.name)}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-foreground">{item.title}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">{item.detail}</p>
+        <p className="truncate text-[14.5px] font-bold text-text">{item.name}</p>
+        <p className="truncate text-[13px] text-muted-1">{item.detail}</p>
       </div>
-      <span className={cn(
-        "inline-flex shrink-0 items-center gap-1 self-start rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors",
-        URGENCY_ACTION[item.urgency]
-      )}>
-        {item.action}<ChevronRight className="h-3 w-3" />
+      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-[9px] border border-[color-mix(in_oklab,var(--accent)_30%,transparent)] bg-[color-mix(in_oklab,var(--accent)_16%,transparent)] px-3 py-2 text-[12.5px] font-bold text-accent-lite">
+        Review<ChevronRight className="h-3 w-3" strokeWidth={2.4} />
       </span>
-    </div>
+    </Link>
   );
-  return item.href
-    ? <Link href={item.href} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl">{content}</Link>
-    : <div>{content}</div>;
 }
 
 function CheckInBarChart({ bars }: { bars: DashboardData["checkInBars"] }) {
   const maxBar = Math.max(...bars.map((b) => b.count), 1);
-  const barH = 64;
+  const H = 72; // px height of a full-count bar; container leaves room for the label
   return (
-    <div className="flex items-end gap-1.5" style={{ height: barH + 20 }}>
+    <div className="mt-1.5 flex h-24 items-end justify-between gap-2">
       {bars.map(({ day, count, isToday }) => {
-        const h = Math.max(Math.round((count / maxBar) * barH), 4);
+        const h = count === 0 ? 4 : Math.max(Math.round((count / maxBar) * H), 6);
         return (
-          <div key={day} className="group flex flex-1 flex-col items-center gap-1">
-            <span className="hidden text-[9px] font-semibold text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 sm:block">
-              {count}
-            </span>
+          <div key={day} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
             <div
-              className={cn("w-full rounded-sm transition-all", isToday ? "bg-accent" : "bg-muted-foreground/25 group-hover:bg-accent/50")}
+              className={cn(
+                "w-full rounded-t-md",
+                isToday ? "bg-accent" : count === 0 ? "bg-white/[0.07]" : "bg-white/[0.16]"
+              )}
               style={{ height: h }}
             />
-            <span className={cn("text-[10px] font-medium", isToday ? "font-bold text-accent" : "text-muted-foreground")}>
+            <span className={cn("text-[11px] font-semibold", isToday ? "text-accent-lite" : "text-muted-3")}>
               {day}
             </span>
           </div>
@@ -176,192 +171,173 @@ function CheckInBarChart({ bars }: { bars: DashboardData["checkInBars"] }) {
   );
 }
 
+const PANEL = "rounded-2xl border border-hair bg-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]";
+const PANEL_TITLE = "text-[11px] font-semibold uppercase tracking-[0.1em] text-[#C7CDD6]";
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function DashboardClient({ data }: { data: DashboardData }) {
   const { coachName, totalClients, attentionClients, onTrackCount, macroCompliancePct, recentCheckIns, checkInBars } = data;
 
-  const triageItems       = attentionClients.map(toTriageItem);
-  const redCount          = attentionClients.filter((c) => c.triage === "red").length;
-  const yellowCount       = attentionClients.filter((c) => c.triage === "yellow").length;
+  const triageItems         = attentionClients.map(toTriageItem);
+  const redCount            = attentionClients.filter((c) => c.triage === "red").length;
+  const yellowCount         = attentionClients.filter((c) => c.triage === "yellow").length;
   const needsAttentionCount = attentionClients.length;
+  const weekTotal           = checkInBars.reduce((s, b) => s + b.count, 0);
 
-  const todayCount = checkInBars.find((b) => b.isToday)?.count ?? 0;
-  const weekTotal  = checkInBars.reduce((s, b) => s + b.count, 0);
-
-  const attentionDelta    = needsAttentionCount === 0 ? "All on track" : `${redCount} critical · ${yellowCount} to review`;
-  const attentionDeltaDir = (needsAttentionCount === 0 ? "up" : "flat") as "up" | "flat";
+  const attentionEyebrow = needsAttentionCount > 0
+    ? `${redCount} CRITICAL · ${yellowCount} TO REVIEW`
+    : "ALL ON TRACK";
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar coachName={coachName} />
+      {/* Live attention count lights up the sidebar Triage badge (0 → hidden). */}
+      <Sidebar coachName={coachName} triageCount={needsAttentionCount} />
       <main className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+        <div className="mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-9">
 
           {/* Greeting header */}
-          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-start">
             <div>
-              <h1 className="font-display text-[28px] font-semibold leading-none tracking-[-0.01em] text-foreground">
+              <h1 className="font-display text-[27px] font-extrabold leading-none tracking-[-0.02em] text-text">
                 {getGreeting()}, {coachName}.
               </h1>
-              <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="mt-2 flex flex-wrap items-center gap-3 text-[13.5px] text-muted-1">
                 <span suppressHydrationWarning>{formatDate()}</span>
-                <span className="text-border">·</span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
+                <span className="h-[3px] w-[3px] rounded-full bg-[#3B424C]" />
+                <span className="flex items-center gap-1.5 text-green">
+                  <span className="h-[7px] w-[7px] animate-pulse rounded-full bg-green shadow-[0_0_0_3px_color-mix(in_oklab,var(--green)_22%,transparent)]" />
                   Platform live
                 </span>
-                <span className="text-border">·</span>
-                <span suppressHydrationWarning>
-                  {needsAttentionCount > 0
-                    ? `${needsAttentionCount} client${needsAttentionCount > 1 ? "s" : ""} need attention`
-                    : "All clients on track"}
-                </span>
+                {/* The "needs attention" count lives in the stat card (the number)
+                    and the panel (who) — the header echo was dropped as redundant. */}
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2.5">
-              <Link href="/clients/new" className={buttonClass()}>
-                <UserPlus className="h-4 w-4" strokeWidth={2} />Add Client
-              </Link>
-            </div>
+            <Link href="/clients/new" className={buttonClass({ size: "lg" })}>
+              <Plus className="h-4 w-4" strokeWidth={2.2} />Add client
+            </Link>
           </div>
 
-          {/* Metric cards */}
-          <div className="mb-8 grid gap-4 sm:grid-cols-3">
-            <MetricCard
+          {/* Stat cards */}
+          <div className="mb-6 grid gap-4 sm:grid-cols-3">
+            <StatCard
               icon={Users}
+              tone="accent"
+              eyebrow="LIVE COUNT"
               label="Active clients"
               value={totalClients.toString()}
-              delta="Live count"
-              deltaDir="flat"
-              sub={`${totalClients} on roster`}
+              cap="on roster"
             />
-            <MetricCard
+            <StatCard
               icon={AlertTriangle}
+              tone={needsAttentionCount > 0 ? "amber" : "green"}
+              eyebrow={attentionEyebrow}
               label="Needs attention"
               value={needsAttentionCount.toString()}
-              delta={attentionDelta}
-              deltaDir={attentionDeltaDir}
-              sub="red + yellow · from engine"
+              cap="flagged by engine"
             />
-            <MetricCard
+            <StatCard
               icon={BarChart3}
+              tone="green"
+              eyebrow={macroCompliancePct !== null ? "7-DAY AVG" : "NO CHECK-INS"}
               label="Macro compliance"
               value={macroCompliancePct !== null ? `${macroCompliancePct}%` : "—"}
-              delta={macroCompliancePct !== null ? "Avg calorie adherence" : "No check-ins this week"}
-              deltaDir="flat"
-              sub="7-day avg · clients with targets"
+              cap="across roster"
             />
           </div>
 
           {/* Main two-column body */}
-          <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+          <div className="grid items-start gap-4 lg:grid-cols-[1.65fr_1fr]">
 
-            {/* LEFT: Attention triage */}
-            <section aria-labelledby="triage-heading">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h2 id="triage-heading" className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-foreground">
-                    <AlertTriangle className="h-4 w-4 text-warning" strokeWidth={2} />
-                    Requires Attention
-                  </h2>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Sorted by urgency — tap an item to act
-                  </p>
-                </div>
+            {/* LEFT: Requires attention */}
+            <section aria-labelledby="triage-heading" className={cn(PANEL, "p-[22px]")}>
+              <div className="flex items-center justify-between gap-2.5">
+                <h2 id="triage-heading" className={cn(PANEL_TITLE, "flex items-center gap-2.5")}>
+                  <AlertTriangle className="h-4 w-4 text-amber" strokeWidth={2} />
+                  Requires attention
+                </h2>
                 {needsAttentionCount > 0 && (
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-warning/15 text-[11px] font-bold text-warning">
+                  <span className="rounded-md bg-[color-mix(in_oklab,var(--amber)_16%,transparent)] px-2.5 py-0.5 font-mono text-[11px] font-semibold text-amber">
                     {needsAttentionCount}
                   </span>
                 )}
               </div>
+              <p className="mb-4 mt-1 text-[12.5px] text-muted-2">
+                Sorted by urgency — tap a client to open the review.
+              </p>
 
               {triageItems.length > 0 && (
-                <div className="space-y-3">
-                  {triageItems.map((item) => <TriageCard key={item.id} item={item} />)}
+                <div className="flex flex-col gap-2.5">
+                  {triageItems.map((item) => <AttentionRow key={item.id} item={item} />)}
                 </div>
               )}
 
               <div className={cn(
-                "flex items-center gap-2 rounded-xl border border-border bg-muted/20 px-4 py-3 text-xs text-muted-foreground",
-                triageItems.length > 0 ? "mt-4" : "mt-0"
+                "flex items-center gap-3 rounded-xl border border-[color-mix(in_oklab,var(--green)_16%,transparent)] bg-[color-mix(in_oklab,var(--green)_7%,var(--surface-deep))] px-4 py-3.5",
+                triageItems.length > 0 ? "mt-2.5" : ""
               )}>
-                <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-                {onTrackCount} client{onTrackCount !== 1 ? "s" : ""} fully on track with no flags
+                <CheckCircle2 className="h-[17px] w-[17px] shrink-0 text-green" strokeWidth={2} />
+                <span className="text-[13.5px] text-muted-1">
+                  <b className="font-bold text-text">{onTrackCount} client{onTrackCount !== 1 ? "s" : ""}</b> fully on track with no flags.
+                </span>
               </div>
 
-              <div className="mt-2 flex justify-end">
-                <Link href="/triage" className="flex items-center gap-1 text-xs font-semibold text-accent hover:underline">
-                  View full Triage Board<ChevronRight className="h-3 w-3" />
-                </Link>
-              </div>
+              <Link
+                href="/triage"
+                className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-[11px] border border-hair-2 py-2.5 text-[13px] font-semibold text-nav transition-colors hover:bg-white/[0.03] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring"
+              >
+                View full Triage Board<ChevronRight className="h-3.5 w-3.5" strokeWidth={2.2} />
+              </Link>
             </section>
 
-            {/* RIGHT: Check-in pulse + recent */}
-            <aside className="flex flex-col gap-5">
+            {/* RIGHT: Recent check-ins + weekly activity */}
+            <aside className="flex flex-col gap-4">
 
-              <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
-                      Check-in Pulse
-                    </h3>
-                    <p className="mt-0.5 text-xs text-muted-foreground">Submissions this week</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-mono text-2xl font-bold tabular-nums text-foreground">{todayCount}</p>
-                    <p className="text-[10px] text-muted-foreground">today · {weekTotal} this week</p>
-                  </div>
-                </div>
-                <CheckInBarChart bars={checkInBars} />
-              </div>
-
-              <div className="rounded-xl border border-border bg-card shadow-sm">
-                <div className="border-b border-border px-5 py-3.5">
-                  <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-foreground">
-                    <Clock className="h-3.5 w-3.5 text-accent" strokeWidth={2} />
-                    Recent Check-ins
-                  </h3>
-                </div>
-                <div className="divide-y divide-border">
-                  {recentCheckIns.length === 0
-                    ? <p className="px-5 py-4 text-xs text-muted-foreground">No check-ins yet.</p>
-                    : recentCheckIns.map((c) => {
-                        const s = STATUS_CONFIG[c.status];
-                        const href = c.status === "on_track"
-                          ? `/clients/${c.id}`
-                          : `/ai-check-ins?clientId=${encodeURIComponent(c.id)}`;
-                        return (
-                          <Link
-                            key={c.checkInId}
-                            href={href}
-                            className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/40"
-                          >
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-                              {c.initials}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-medium text-foreground">{c.name}</p>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-2">
-                              <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                                <Clock className="h-2.5 w-2.5" />
-                                {new Date(c.time).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-                              </span>
-                              <span className={cn("flex items-center gap-1 text-[10px] font-semibold", s.text)}>
-                                <span className={cn("h-1.5 w-1.5 rounded-full", s.dot)} />{s.label}
-                              </span>
-                            </div>
-                          </Link>
-                        );
-                      })
-                  }
-                </div>
-                <div className="border-t border-border px-5 py-3">
-                  <Link href="/ai-check-ins" className="flex items-center justify-center gap-1.5 text-xs font-semibold text-accent hover:underline">
-                    View all pending in AI Hub<ArrowRight className="h-3.5 w-3.5" />
+              <div className={cn(PANEL, "p-5")}>
+                <div className="mb-4 flex items-center justify-between gap-2.5">
+                  <h3 className={PANEL_TITLE}>Recent check-ins</h3>
+                  <Link href="/ai-check-ins" className="text-[12px] font-semibold text-accent-lite hover:underline">
+                    View all
                   </Link>
                 </div>
+                <div className="flex flex-col gap-0.5">
+                  {recentCheckIns.length === 0 ? (
+                    <p className="text-[13px] text-muted-2">No check-ins yet.</p>
+                  ) : (
+                    recentCheckIns.map((c) => {
+                      // Route unchanged: on-track opens the client page, anything
+                      // needing review opens the AI hub.
+                      const href = c.status === "on_track"
+                        ? `/clients/${c.id}`
+                        : `/ai-check-ins?clientId=${encodeURIComponent(c.id)}`;
+                      return (
+                        <Link
+                          key={c.checkInId}
+                          href={href}
+                          className="flex items-center gap-3 rounded-[10px] px-2 py-2.5 transition-colors hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring"
+                        >
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-[color-mix(in_oklab,var(--accent)_14%,#14161B)] text-[12px] font-bold text-accent-lite">
+                            {c.initials}
+                          </div>
+                          <span className="flex-1 truncate text-[13.5px] font-semibold text-text">{c.name}</span>
+                          <span className="font-mono text-[12px] font-medium text-muted-2">
+                            {new Date(c.time).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </Link>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div className={cn(PANEL, "p-5")}>
+                <div className="mb-4 flex items-center justify-between gap-2.5">
+                  <h3 className={PANEL_TITLE}>This week</h3>
+                  <span className="font-mono text-[12px] font-medium text-muted-3">
+                    {weekTotal} check-in{weekTotal !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                <CheckInBarChart bars={checkInBars} />
               </div>
 
             </aside>
