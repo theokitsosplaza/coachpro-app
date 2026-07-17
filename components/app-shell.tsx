@@ -70,13 +70,13 @@ export function AppShell({
           type="button"
           aria-label="Close menu"
           onClick={() => setOpen(false)}
-          className="fixed inset-0 z-40 bg-black/50 min-[861px]:hidden"
+          className="fixed inset-0 z-40 bg-black/50 min-[860px]:hidden"
         />
       )}
 
       {/* Content column: mobile top bar (≤860px) + scrolling main. */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center gap-3 border-b border-hair bg-bg px-4 py-3 min-[861px]:hidden">
+        <div className="flex items-center gap-3 border-b border-hair bg-bg px-4 py-3 min-[860px]:hidden">
           <button
             type="button"
             onClick={() => setOpen(true)}

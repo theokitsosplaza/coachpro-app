@@ -1171,7 +1171,7 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
         <button
           type="button"
           onClick={handleBack}
-          className="flex shrink-0 items-center gap-2 border-b border-hair bg-sidebar px-4 py-3 text-sm font-semibold text-nav transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring min-[861px]:hidden"
+          className="flex shrink-0 items-center gap-2 border-b border-hair bg-sidebar px-4 py-3 text-sm font-semibold text-nav transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring min-[860px]:hidden"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6l-6 6 6 6" /></svg>
           Back to queue
