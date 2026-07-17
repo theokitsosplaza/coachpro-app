@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Dumbbell, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -69,13 +70,16 @@ export default function SetPasswordPage() {
       <div className="w-full max-w-sm">
 
         <div className="mb-8 text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-accent mb-4">
-            <Dumbbell className="w-6 h-6 text-accent-foreground" strokeWidth={2.5} />
-          </div>
-          <h1 className="font-display text-xl font-semibold text-foreground tracking-tight">
-            Vimafy
-          </h1>
-          <p className="mt-1 text-sm text-secondary">Set your password</p>
+          <Image
+            src="/brand/vimafy-lockup-dark.svg"
+            alt="Vimafy"
+            width={470}
+            height={128}
+            priority
+            unoptimized
+            className="mx-auto mb-3 h-10 w-auto"
+          />
+          <p className="text-sm text-secondary">Set your password</p>
         </div>
 
         <div

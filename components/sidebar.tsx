@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -61,13 +62,16 @@ export function Sidebar({ activeItem, coachName }: SidebarProps) {
 
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-sidebar-accent bg-sidebar text-sidebar-foreground lg:w-60">
-      <div className="flex h-14 items-center gap-2 border-b border-sidebar-accent px-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
-          <Dumbbell className="h-4 w-4 text-accent-foreground" strokeWidth={2.5} />
-        </div>
-        <div>
-          <span className="text-sm font-semibold tracking-tight">Vimafy</span>
-        </div>
+      <div className="flex h-14 items-center border-b border-sidebar-accent px-5">
+        <Image
+          src="/brand/vimafy-lockup-dark.svg"
+          alt="Vimafy"
+          width={470}
+          height={128}
+          priority
+          unoptimized
+          className="h-8 w-auto"
+        />
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 p-3" aria-label="Main navigation">
