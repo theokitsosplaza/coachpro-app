@@ -34,9 +34,6 @@ export function StatCard({
 
   const handleClick = () => {
     onClick?.();
-    if (typeof window !== "undefined") {
-      console.log(`[Progressive disclosure] ${label}`);
-    }
   };
 
   return (
