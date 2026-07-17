@@ -206,8 +206,8 @@ export function RosterClient({
                 </div>
               </div>
 
-              {/* Macro chips */}
-              <div className="flex shrink-0 gap-2">
+              {/* Macro chips — hidden on narrow screens so the name has room. */}
+              <div className="flex shrink-0 gap-2 max-[860px]:hidden">
                 {isArchived ? (
                   <>
                     <span className={cn(chipBase, "bg-white/5 text-muted-1")}>

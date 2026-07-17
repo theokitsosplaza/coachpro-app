@@ -773,9 +773,9 @@ export function SettingsClient({ initialProfile, isAdmin }: { initialProfile: Co
           </span>
         </header>
 
-        <div className="flex min-h-0 flex-1 overflow-hidden">
+        <div className="flex min-h-0 flex-1 overflow-hidden max-[860px]:flex-col">
           <nav
-            className="flex w-56 shrink-0 flex-col gap-1 border-r border-hair px-3 py-5"
+            className="flex w-56 shrink-0 flex-col gap-1 border-r border-hair px-3 py-5 max-[860px]:w-full max-[860px]:flex-row max-[860px]:gap-2 max-[860px]:overflow-x-auto max-[860px]:border-r-0 max-[860px]:border-b max-[860px]:py-2.5"
             aria-label="Settings navigation"
           >
             {TABS.map(({ id, label, icon: Icon, badge }) => {
@@ -787,7 +787,7 @@ export function SettingsClient({ initialProfile, isAdmin }: { initialProfile: Co
                   onClick={() => setActiveTab(id)}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "relative flex items-center gap-3 rounded-[11px] px-3 py-2.5 text-left text-[13.5px] font-semibold transition-colors",
+                    "relative flex items-center gap-3 rounded-[11px] px-3 py-2.5 text-left text-[13.5px] font-semibold transition-colors max-[860px]:shrink-0",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring",
                     isActive ? "text-white" : "text-nav hover:bg-white/[0.03] hover:text-white"
                   )}

@@ -236,7 +236,13 @@ function LeftPanel({ clients, selectedId, onSelect }: {
   }
 
   return (
-    <aside className="flex w-[334px] shrink-0 flex-col border-r border-hair bg-sidebar">
+    <aside
+      className={cn(
+        "flex w-[334px] shrink-0 flex-col border-r border-hair bg-sidebar max-[860px]:w-full",
+        // Mobile master-detail: hide the queue once a client's review is open.
+        selectedId && "max-[860px]:hidden"
+      )}
+    >
       <div className="border-b border-hair px-5 py-4">
         <div className="flex items-center justify-between">
           <h2 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#C7CDD6]">Check-in Queue</h2>
@@ -352,7 +358,7 @@ function ErrorPanel({ message }: { message: string }) {
 
 function EmptyPanel() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-bg text-center">
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-bg text-center max-[860px]:hidden">
       <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-hair bg-surface">
         <Sparkles className="h-6 w-6 text-muted-2" />
       </div>
@@ -1092,6 +1098,16 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
     setLoading(!isApproved);
   };
 
+  // Mobile master-detail: return from a client's review to the queue.
+  const handleBack = () => {
+    setSelectedId(null);
+    window.history.replaceState(null, '', '/ai-check-ins');
+    setError(null);
+    setAnalysis(null);
+    setApproved(false);
+    setLoading(false);
+  };
+
   // POST to approve the current check-in
   const handleApprove = async (confirmedMacros: ConfirmedMacros | null, clientMessage: string) => {
     if (!analysis) return;
@@ -1149,7 +1165,19 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
   const selectedClient = localQueue.find((c) => c.id === selectedId) ?? null;
 
   return (
-    <div className="flex h-full min-w-0 overflow-hidden">
+    <div className="flex h-full min-w-0 flex-col overflow-hidden">
+      {/* Mobile only (≤860px): back to the queue from an open review. */}
+      {selectedId && (
+        <button
+          type="button"
+          onClick={handleBack}
+          className="flex shrink-0 items-center gap-2 border-b border-hair bg-sidebar px-4 py-3 text-sm font-semibold text-nav transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring min-[861px]:hidden"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6l-6 6 6 6" /></svg>
+          Back to queue
+        </button>
+      )}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         <LeftPanel
           clients={localQueue}
           selectedId={selectedId}
@@ -1178,5 +1206,6 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
           <EmptyPanel />
         )}
       </div>
+    </div>
   );
 }
