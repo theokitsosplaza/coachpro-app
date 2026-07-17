@@ -101,6 +101,13 @@ export async function GET(request: Request) {
     // insight stat cards shown in the UI header.
     const latest = row.checkIns[row.checkIns.length - 1];
 
+    // The immediately-preceding check-in — always present here (the < 2 guard
+    // above), though its reflection may be empty (coach-created / backfilled
+    // rows). Passed to the AI as tone-only context for a week-over-week
+    // qualitative read; the AI layer omits the comparison entirely when either
+    // reflection is blank, so nothing changes for a genuine single-week analysis.
+    const previous = row.checkIns[row.checkIns.length - 2];
+
     // ---- 4. Run the deterministic engine ----------------------------------
     const synthesis = analyzeClient(clientInput, checkInInputs);
 
@@ -126,9 +133,12 @@ export async function GET(request: Request) {
     }
 
     if (!aiOutput) {
-      // Pass the latest check-in's free-text reflection as tone-only context.
-      // The system prompt forbids it from overriding the Synthesis or safety logic.
-      aiOutput = await generateCoachOutput(clientInput, synthesis, latest.clientReflection);
+      // Pass this week's + last week's free-text reflections as tone-only context.
+      // The system prompt forbids either from overriding the Synthesis or safety
+      // logic, and enables a bounded week-over-week comparison only when both exist.
+      aiOutput = await generateCoachOutput(
+        clientInput, synthesis, latest.clientReflection, previous.clientReflection,
+      );
 
       // Cache ONLY a genuine success. generateCoachOutput never throws — on any
       // failure (rate limit, timeout, bad JSON, missing key) it returns a safe
