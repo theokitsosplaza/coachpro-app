@@ -254,6 +254,7 @@ function InviteCoachSection() {
 function GeneralTab({ initialProfile, isAdmin }: { initialProfile: CoachProfile; isAdmin: boolean }) {
   const [profile, setProfile] = useState(initialProfile);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const set = (key: keyof CoachProfile) =>
@@ -261,10 +262,17 @@ function GeneralTab({ initialProfile, isAdmin }: { initialProfile: CoachProfile;
       setProfile((p) => ({ ...p, [key]: e.target.value }));
 
   const handleSave = () => {
+    setError(null);
     startTransition(async () => {
-      await updateCoachProfile(profile);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      try {
+        await updateCoachProfile(profile);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      } catch (e) {
+        // updateCoachProfile throws on failure (e.g. the new email is already in
+        // use, so the Supabase auth email couldn't be synced). Surface it.
+        setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+      }
     });
   };
 
@@ -308,6 +316,11 @@ function GeneralTab({ initialProfile, isAdmin }: { initialProfile: CoachProfile;
           </div>
         </div>
         <div className="mt-5 flex items-center justify-end gap-3 border-t border-border pt-4">
+          {error && (
+            <p className="mr-auto rounded-lg bg-status-red-soft px-3 py-1.5 text-sm text-status-red">
+              {error}
+            </p>
+          )}
           <AutoSaveIndicator visible={saved} />
           <button
             type="button"
