@@ -22,6 +22,7 @@ model Coach {
   // Relations
   clients   Client[]
   events    CalendarEvent[]
+  config    CoachConfig?
 }
 
 // 2. The Client (Roster)
@@ -111,14 +112,30 @@ model MacroHistory {
   client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
-// 7. Calendar Events 
+// 7. Calendar Events
 model CalendarEvent {
   id        String   @id @default(cuid())
   coachId   String
   title     String
-  eventType String   
+  eventType String
   startTime DateTime
   endTime   DateTime
 
   coach     Coach    @relation(fields: [coachId], references: [id])
+}
+
+// 8. Per-coach configuration
+// A 1:1 row per Coach holding a jsonb `settings` bag. The TS layer
+// (lib/coach-config.ts) is the SOURCE OF TRUTH for which dials exist and their
+// defaults; this table only persists a coach's overrides. A coach with NO row —
+// or a row missing/with an invalid value for a key — resolves to pure defaults
+// via the validated merge in the accessor, so this table is purely additive and
+// behaviour-neutral until a dial is actually set. Adding a future dial is a TS
+// change only (a new key + default), never a migration.
+model CoachConfig {
+  coachId   String   @id
+  coach     Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  settings  Json     // shape/defaults owned by lib/coach-config.ts, not the DB
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
