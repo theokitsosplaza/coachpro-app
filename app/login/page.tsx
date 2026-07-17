@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Dumbbell, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -12,8 +12,10 @@ const inputBase =
   "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent " +
   "disabled:opacity-50";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const noAccount = searchParams.get("error") === "no_account";
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -53,6 +55,14 @@ export default function LoginPage() {
           </h1>
           <p className="mt-1 text-sm text-secondary">Sign in to your dashboard</p>
         </div>
+
+        {/* No-account banner (bounced here by verifyCoachSession after we
+            cleared a session whose auth user has no Coach row). */}
+        {noAccount && (
+          <div className="mb-4 rounded-lg border border-warning/30 bg-warning-muted px-3 py-2.5 text-sm text-warning">
+            This account isn&apos;t fully set up yet — please contact your administrator.
+          </div>
+        )}
 
         {/* Form card */}
         <div
@@ -120,5 +130,14 @@ export default function LoginPage() {
 
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  // useSearchParams() requires a Suspense boundary in Next 16.
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

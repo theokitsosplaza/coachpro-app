@@ -35,7 +35,28 @@ export async function proxy(request: NextRequest) {
   // Exchange refresh token if the access token is expired.
   // getUser() makes a network call when needed; getClaims() does not refresh.
   // IMPORTANT: must be awaited before returning supabaseResponse.
-  const { data: { user } } = await supabase.auth.getUser();
+  //
+  // getUser() only *throws* on infrastructure failure (Auth host unreachable,
+  // timeout, 5xx) — an ordinary missing/invalid session resolves to
+  // { data: { user: null } } and is handled by the redirect logic below. Since
+  // this proxy runs on nearly every route, an unhandled throw would 500 the
+  // entire app (including the login pages) during a transient Auth outage.
+  // Fail OPEN: on throw, let the request proceed untouched. This is safe
+  // because the proxy is not the security boundary — every data-bearing route
+  // re-validates the JWT locally via getClaims() (in lib/dal.ts and the API
+  // route handlers), which needs no network round-trip. A still-valid token
+  // keeps working; an absent/expired one is rejected downstream by getClaims().
+  let user = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch (err) {
+    console.error(
+      "[proxy] supabase.auth.getUser() failed; proceeding without a proxy-level auth gate (downstream getClaims() still enforces):",
+      err
+    );
+    return supabaseResponse;
+  }
 
   // Redirect unauthenticated requests away from protected routes.
   // Runs AFTER token refresh so a valid-but-expired token is refreshed

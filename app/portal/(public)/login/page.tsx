@@ -15,7 +15,9 @@ const inputBase =
 function PortalLoginForm() {
   const searchParams = useSearchParams()
   const router       = useRouter()
-  const invalidLink  = searchParams.get('error') === 'invalid_link'
+  const errorCode    = searchParams.get('error')
+  const invalidLink  = errorCode === 'invalid_link'
+  const noAccount    = errorCode === 'no_account'
 
   const [email, setEmail]         = useState('')
   const [code, setCode]           = useState('')
@@ -182,6 +184,14 @@ function PortalLoginForm() {
         {invalidLink && (
           <div className="mb-4 rounded-lg border border-warning/30 bg-warning-muted px-3 py-2.5 text-sm text-warning">
             Your sign-in link has expired or is invalid. Request a new code below.
+          </div>
+        )}
+
+        {/* No-account banner (bounced here by verifyClientSession after we
+            cleared a session whose auth user has no Client row). */}
+        {noAccount && (
+          <div className="mb-4 rounded-lg border border-warning/30 bg-warning-muted px-3 py-2.5 text-sm text-warning">
+            This account isn&apos;t fully set up yet — please contact your coach.
           </div>
         )}
 
