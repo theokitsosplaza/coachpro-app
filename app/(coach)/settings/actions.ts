@@ -1,7 +1,10 @@
 'use server';
+import type { User } from '@supabase/supabase-js';
 import { verifyCoachSession } from '@/lib/dal';
 import { prisma } from '@/lib/prisma';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
+import { findAuthUserByEmail } from '@/lib/supabase/find-auth-user';
 
 export async function updateCoachProfile(fields: {
   name: string;
@@ -85,6 +88,8 @@ export async function updateCoachProfile(fields: {
 
 export type InviteCoachState = { error: string } | { success: true; message: string } | null
 
+const normalizeEmail = (e: string) => e.trim().toLowerCase()
+
 export async function inviteCoach(
   _prev: InviteCoachState,
   formData: FormData,
@@ -97,38 +102,118 @@ export async function inviteCoach(
     return { error: 'You do not have permission to invite coaches.' }
   }
 
-  const email = (formData.get('email') as string | null)?.trim() ?? ''
-  const name  = (formData.get('name')  as string | null)?.trim() ?? ''
+  const name = (formData.get('name') as string | null)?.trim() ?? ''
+  const rawEmail = (formData.get('email') as string | null)?.trim() ?? ''
 
-  if (!email) return { error: 'Email is required.' }
-  if (!name)  return { error: 'Name is required.' }
+  if (!rawEmail) return { error: 'Email is required.' }
+  if (!name)     return { error: 'Name is required.' }
 
-  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth-callback`
+  // Normalize on compare so casing never misroutes an existing user (Supabase
+  // stores emails lowercased). Mirrors inviteClient — the two flows must make
+  // the same existence decision for the same address.
+  const email = normalizeEmail(rawEmail)
+
   const admin = createAdminClient()
+  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth-callback`
 
-  // Invite first — never write a dangling Coach row if the invite fails.
-  const { data, error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
+  let authUserId: string
+  let message: string
 
-  if (error) {
-    if (error.message.toLowerCase().includes('already registered')) {
-      return { error: 'A coach with this email is already registered.' }
+  // Try to create + invite. The existing-user path is decided by GROUND TRUTH
+  // (an authoritative user lookup), NOT by parsing the invite error's message —
+  // so which code/string Supabase returns for a duplicate email is irrelevant.
+  const { data: invited, error: inviteError } =
+    await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
+
+  if (!inviteError) {
+    // Brand-new user: freshly minted id, so no collision with an existing
+    // Coach row (or a client) is possible.
+    authUserId = invited.user.id
+    message = `Invite sent to ${email}.`
+  } else {
+    // Rate limiting deserves its own message regardless of path.
+    if (inviteError.status === 429 || inviteError.code === 'over_email_send_rate_limit') {
+      return { error: 'Too many emails sent recently. Please wait a minute and try again.' }
     }
-    console.error('[inviteCoach] inviteUserByEmail failed:', error.message, { status: error.status, name: error.name })
-    return { error: 'Failed to send invite. Please try again.' }
+
+    // Any other invite error → verify whether the user actually exists. If it
+    // does, resend a fresh access link; if it doesn't, the error was real.
+    let existingUser: User | null
+    try {
+      existingUser = await findAuthUserByEmail(admin, email)
+    } catch (err) {
+      console.error('[inviteCoach] listUsers failed:', err)
+      return { error: 'Failed to check invite status. Please try again.' }
+    }
+    if (!existingUser) {
+      console.error('[inviteCoach] invite failed and no existing user found:', inviteError.message, {
+        status: inviteError.status,
+        code: inviteError.code,
+      })
+      return { error: 'Failed to send invite. Please try again.' }
+    }
+
+    // Collision guard 1 — refuse if this identity is a CLIENT's auth user. A
+    // coach invite must never repurpose a client's login: it would hand that
+    // client's account coach-level access and break their portal sign-in.
+    const clientOwner = await prisma.client.findFirst({
+      where: { authUserId: existingUser.id },
+      select: { id: true },
+    })
+    if (clientOwner) {
+      return { error: 'This email is already linked to a client account. Use a different email.' }
+    }
+
+    // Collision guard 2 — refuse if this identity already belongs to a DIFFERENT
+    // coach. Coach.authUserId is @unique, so reconnecting it to another coach's
+    // row (the upsert below) would trip the constraint and cross-wire accounts.
+    const otherCoach = await prisma.coach.findFirst({
+      where: { authUserId: existingUser.id, NOT: { email } },
+      select: { id: true },
+    })
+    if (otherCoach) {
+      return { error: 'This email is already linked to another coach account. Use a different email.' }
+    }
+
+    // Existing users can't be re-invited — send a fresh magic link instead. It
+    // lands on /auth-callback, which does setSession then routes to
+    // /set-password: the same first-time-password flow the initial invite uses.
+    const supabase = await createClient()
+    const { error: otpError } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false, emailRedirectTo: redirectTo },
+    })
+    if (otpError) {
+      if (otpError.status === 429 || otpError.code === 'over_email_send_rate_limit') {
+        return { error: 'Too many emails sent recently. Please wait a minute and try again.' }
+      }
+      console.error('[inviteCoach] signInWithOtp failed:', otpError.message, {
+        status: otpError.status,
+        code: otpError.code,
+      })
+      return { error: 'Failed to send invite. Please try again.' }
+    }
+
+    authUserId = existingUser.id
+    message = existingUser.email_confirmed_at
+      ? `${email} already has access — a fresh sign-in link has been sent.`
+      : `Invite resent to ${email} — the previous link has been replaced.`
   }
 
-  // Coach.email is @unique so upsert is safe: re-inviting the same address
-  // repairs the authUserId rather than duplicating the row.
+  // Write/repair the Coach row. Coach.email is @unique so upsert reconnects a
+  // half-created coach (row exists, authUserId never landed) to the found auth
+  // user rather than duplicating it. Collisions are pre-guarded above, so the
+  // unique authUserId constraint should never trip here.
   try {
     await prisma.coach.upsert({
       where:  { email },
-      update: { name, authUserId: data.user.id },
-      create: { email, name, authUserId: data.user.id },
+      update: { name, authUserId },
+      create: { email, name, authUserId },
     })
   } catch (err) {
     console.error('[inviteCoach] DB write failed:', err)
     return { error: 'Invite sent but failed to save coach record. Refresh and try again.' }
   }
 
-  return { success: true, message: `Invite sent to ${email}.` }
+  return { success: true, message }
 }

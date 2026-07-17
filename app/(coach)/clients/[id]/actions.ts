@@ -6,28 +6,11 @@ import { prisma } from '@/lib/prisma'
 import { verifyCoachSession } from '@/lib/dal'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { findAuthUserByEmail } from '@/lib/supabase/find-auth-user'
 
 export type InviteState = { error: string } | { success: true; message: string } | null
 
 const normalizeEmail = (e: string) => e.trim().toLowerCase()
-
-// Locate an existing Supabase auth user by email, paginating through ALL pages
-// (the old code only scanned the first 1000). Used as the authoritative
-// existence check when inviteUserByEmail fails — supabase-js v2 has no
-// getUserByEmail, and we need the user id to store on the Client row.
-async function findAuthUserByEmail(
-  admin: ReturnType<typeof createAdminClient>,
-  email: string,
-): Promise<User | null> {
-  const perPage = 1000
-  for (let page = 1; ; page++) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage })
-    if (error) throw error
-    const match = data.users.find((u) => u.email?.toLowerCase() === email)
-    if (match) return match
-    if (data.users.length < perPage) return null // reached the last page
-  }
-}
 
 export async function inviteClient(
   _prev: InviteState,
