@@ -1,11 +1,8 @@
 import { Dumbbell } from "lucide-react";
-import { Sidebar } from "@/components/sidebar";
 
 export default function ProgramsPage() {
   return (
-    <div className="flex h-screen overflow-hidden bg-bg">
-      <Sidebar />
-      <div className="flex flex-1 flex-col items-center justify-center px-10 text-center">
+    <div className="flex h-full flex-col items-center justify-center px-10 text-center">
         <div className="mb-[22px] flex h-16 w-16 items-center justify-center rounded-[18px] border border-hair bg-surface text-muted-3">
           <Dumbbell className="h-[30px] w-[30px]" strokeWidth={1.7} />
         </div>
@@ -18,6 +15,5 @@ export default function ProgramsPage() {
           Coming soon
         </span>
       </div>
-    </div>
   );
 }

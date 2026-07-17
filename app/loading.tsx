@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Sidebar } from "@/components/sidebar";
+import { AppShell } from "@/components/app-shell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PortalSkeleton } from "@/components/portal-skeleton";
 
@@ -33,14 +33,12 @@ export default function RootLoading() {
   // settles in without a layout jump. Also the default for coach routes that
   // lack their own loading.tsx (e.g. /calendar, /programs).
   return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar />
-      <main className="flex-1 overflow-auto">
-        <div
-          role="status"
-          aria-label="Loading dashboard"
-          className="mx-auto max-w-7xl px-6 py-8 lg:px-8"
-        >
+    <AppShell>
+      <div
+        role="status"
+        aria-label="Loading dashboard"
+        className="mx-auto max-w-7xl px-6 py-8 lg:px-8"
+      >
           <span className="sr-only">Loading dashboard…</span>
 
           {/* Greeting header */}
@@ -99,7 +97,6 @@ export default function RootLoading() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }

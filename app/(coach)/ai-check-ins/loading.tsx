@@ -1,4 +1,3 @@
-import { Sidebar } from "@/components/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Instant skeleton for the AI Check-ins queue while its server component loads
@@ -9,10 +8,9 @@ export default function AiCheckInsLoading() {
     <div
       role="status"
       aria-label="Loading AI check-ins"
-      className="flex h-screen overflow-hidden bg-background"
+      className="flex h-full overflow-hidden"
     >
       <span className="sr-only">Loading AI check-ins…</span>
-      <Sidebar />
 
       <div className="flex min-w-0 flex-1 overflow-hidden">
         {/* Queue column */}

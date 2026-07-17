@@ -1,4 +1,3 @@
-import { Sidebar } from "@/components/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Instant skeleton for Settings while its server component loads the coach
@@ -9,10 +8,9 @@ export default function SettingsLoading() {
     <div
       role="status"
       aria-label="Loading settings"
-      className="flex h-screen overflow-hidden bg-background"
+      className="flex h-full overflow-hidden"
     >
       <span className="sr-only">Loading settings…</span>
-      <Sidebar />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Header bar */}

@@ -25,7 +25,6 @@ import {
   MessageSquare,
   Quote,
 } from "lucide-react";
-import { Sidebar } from "@/components/sidebar";
 import { cn } from "@/lib/utils";
 import { CHECK_IN_STATUS, type CheckInStatus } from "@/lib/check-in-status";
 import { attentionFlag, type AttentionSignal } from "@/lib/attention-flag";
@@ -1150,10 +1149,7 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
   const selectedClient = localQueue.find((c) => c.id === selectedId) ?? null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-bg">
-      <Sidebar />
-
-      <div className="flex min-w-0 flex-1 overflow-hidden">
+    <div className="flex h-full min-w-0 overflow-hidden">
         <LeftPanel
           clients={localQueue}
           selectedId={selectedId}
@@ -1182,6 +1178,5 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
           <EmptyPanel />
         )}
       </div>
-    </div>
   );
 }

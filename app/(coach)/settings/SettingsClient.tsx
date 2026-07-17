@@ -21,7 +21,6 @@ import {
   UserPlus,
   Loader2,
 } from "lucide-react";
-import { Sidebar } from "@/components/sidebar";
 import { buttonClass } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { updateCoachProfile, inviteCoach, type InviteCoachState } from "./actions";
@@ -765,10 +764,7 @@ export function SettingsClient({ initialProfile, isAdmin }: { initialProfile: Co
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
 
   return (
-    <div className="flex h-screen overflow-hidden bg-bg">
-      <Sidebar />
-
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+    <div className="flex h-full min-w-0 flex-col overflow-hidden">
         <header className="flex h-14 shrink-0 items-center justify-between border-b border-hair px-6 md:px-8">
           <h1 className="text-xl font-extrabold tracking-[-0.01em] text-text">Settings</h1>
           <span className="flex items-center gap-1.5 text-[12.5px] text-muted-1">
@@ -845,6 +841,5 @@ export function SettingsClient({ initialProfile, isAdmin }: { initialProfile: Co
           </main>
         </div>
       </div>
-    </div>
   );
 }

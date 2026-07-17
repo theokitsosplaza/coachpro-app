@@ -5,7 +5,6 @@ import {
   Users, AlertTriangle, BarChart3,
   Plus, CheckCircle2, ChevronRight,
 } from "lucide-react";
-import { Sidebar } from "@/components/sidebar";
 import { buttonClass } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -190,11 +189,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
     : "ALL ON TRACK";
 
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Live attention count lights up the sidebar Triage badge (0 → hidden). */}
-      <Sidebar coachName={coachName} triageCount={needsAttentionCount} />
-      <main className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-9">
+    <div className="mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-9">
 
           {/* Greeting header */}
           <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-start">
@@ -343,7 +338,5 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             </aside>
           </div>
         </div>
-      </main>
-    </div>
   );
 }

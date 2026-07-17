@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { AlertTriangle, ChevronRight, CircleDot } from "lucide-react";
-import { Sidebar } from "@/components/sidebar";
 import { cn } from "@/lib/utils";
 import type { Triage } from "@/lib/coach-engine";
 import { OVERDUE_DAYS } from "@/lib/triage-constants";
@@ -259,11 +258,7 @@ export function TriageBoardClient({ rows }: { rows: TriageClientRow[] }) {
   );
 
   return (
-    <div className="flex min-h-screen bg-bg">
-      <Sidebar />
-
-      <main className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-[1080px] px-6 py-8 md:px-10 md:py-9">
+    <div className="mx-auto max-w-[1080px] px-6 py-8 md:px-10 md:py-9">
 
           {/* Page header */}
           <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -307,7 +302,5 @@ export function TriageBoardClient({ rows }: { rows: TriageClientRow[] }) {
           )}
 
         </div>
-      </main>
-    </div>
   );
 }

@@ -1,4 +1,3 @@
-import { Sidebar } from "@/components/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Instant skeleton for the Triage Board while its server component loads every
@@ -6,14 +5,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 // max-w-4xl main) and its grouped list of client rows.
 export default function TriageLoading() {
   return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar />
-      <main className="flex-1 overflow-auto">
-        <div
-          role="status"
-          aria-label="Loading triage board"
-          className="mx-auto max-w-4xl px-6 py-8 lg:px-8"
-        >
+    <div
+      role="status"
+      aria-label="Loading triage board"
+      className="mx-auto max-w-4xl px-6 py-8 lg:px-8"
+    >
           <span className="sr-only">Loading triage board…</span>
 
           {/* Page header */}
@@ -44,7 +40,5 @@ export default function TriageLoading() {
             ))}
           </div>
         </div>
-      </main>
-    </div>
   );
 }
