@@ -396,11 +396,13 @@ function AnalysisPanel({
   onApprove,
   approving,
   approved,
+  showMacros,
 }: {
   data: AnalysisResult;
   onApprove: (macros: ConfirmedMacros | null, message: string) => void;
   approving: boolean;
   approved: boolean;
+  showMacros: boolean;
 }) {
   const { clientInput, latestCheckIn, synthesis, aiOutput } = data;
   const { recommendation, flags, weight, adherence } = synthesis;
@@ -501,8 +503,10 @@ function AnalysisPanel({
             </span>
           </div>
 
-          {/* Key insight stats */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {/* Key insight stats. "Cal adherence" is a macro-compliance surface
+              gated by the per-coach showMacros dial; when off the grid drops to
+              three columns so the wellbeing stats stay flush. */}
+          <div className={cn("grid grid-cols-2 gap-3", showMacros ? "sm:grid-cols-4" : "sm:grid-cols-3")}>
             <InsightStat
               label="Weight trend"
               value={fmtRate(weight.ratePerWeekPct)}
@@ -524,13 +528,15 @@ function AnalysisPanel({
               color={fatigueColor(latestCheckIn.fatigueScore)}
               icon={Activity}
             />
-            <InsightStat
-              label="Cal adherence"
-              value={`${Math.round(adherence.calorieRatio * 100)}%`}
-              delta={adherence.status === "on_plan" ? "On plan" : adherence.status === "over" ? "Above target" : adherence.status === "under" ? "Below target" : "Unknown"}
-              color={adherenceColor(adherence.status)}
-              icon={BarChart3}
-            />
+            {showMacros && (
+              <InsightStat
+                label="Cal adherence"
+                value={`${Math.round(adherence.calorieRatio * 100)}%`}
+                delta={adherence.status === "on_plan" ? "On plan" : adherence.status === "over" ? "Above target" : adherence.status === "under" ? "Below target" : "Unknown"}
+                color={adherenceColor(adherence.status)}
+                icon={BarChart3}
+              />
+            )}
           </div>
 
           {/* Safety / warning flags (if any) */}
@@ -1034,7 +1040,7 @@ function ApprovedFallbackPanel({ client }: { client: QueueClientData }) {
 
 // ── Main client component ─────────────────────────────────────────────────────
 
-export function AICheckInsClient({ queueClients }: { queueClients: QueueClientData[] }) {
+export function AICheckInsClient({ queueClients, showMacros }: { queueClients: QueueClientData[]; showMacros: boolean }) {
   const searchParams = useSearchParams();
   const paramId = searchParams.get("clientId");
   const initialId = (paramId && queueClients.some((c) => c.id === paramId))
@@ -1201,6 +1207,7 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
             onApprove={handleApprove}
             approving={approving}
             approved={approved}
+            showMacros={showMacros}
           />
         ) : (
           <EmptyPanel />

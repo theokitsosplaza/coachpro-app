@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { verifyCoachSession } from '@/lib/dal'
+import { getCoachConfig } from '@/lib/coach-config'
 import { analyzeClient } from '@/lib/coach-engine'
 import type { Triage, Severity } from '@/lib/coach-engine'
 import { CHECK_IN_STATUS } from '@/lib/check-in-status'
@@ -225,6 +226,7 @@ export default async function ClientProfilePage({
   params: Promise<{ id: string }>
 }) {
   const coach = await verifyCoachSession();
+  const { showMacros } = await getCoachConfig(coach.id)
 
   const { id: clientId } = await params
 
@@ -429,20 +431,22 @@ export default async function ClientProfilePage({
                 </p>
               )}
 
-              <div className="mb-3 flex items-center gap-2.5">
-                <span className="text-[12.5px] text-muted-1">Adherence</span>
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[12px] font-bold',
-                    ADHERENCE_STYLE[synthesis.adherence.status],
-                  )}
-                >
-                  {ADHERENCE_LABEL[synthesis.adherence.status]}
-                  {synthesis.adherence.status !== 'unknown' && (
-                    <> · {Math.round(synthesis.adherence.calorieRatio * 100)}%</>
-                  )}
-                </span>
-              </div>
+              {showMacros && (
+                <div className="mb-3 flex items-center gap-2.5">
+                  <span className="text-[12.5px] text-muted-1">Adherence</span>
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[12px] font-bold',
+                      ADHERENCE_STYLE[synthesis.adherence.status],
+                    )}
+                  >
+                    {ADHERENCE_LABEL[synthesis.adherence.status]}
+                    {synthesis.adherence.status !== 'unknown' && (
+                      <> · {Math.round(synthesis.adherence.calorieRatio * 100)}%</>
+                    )}
+                  </span>
+                </div>
+              )}
 
               {synthesis.flags.length > 0 && (
                 <div className="flex flex-col items-start gap-2">

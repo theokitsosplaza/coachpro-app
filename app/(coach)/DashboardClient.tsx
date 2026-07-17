@@ -175,7 +175,7 @@ const PANEL_TITLE = "text-[11px] font-semibold uppercase tracking-[0.1em] text-[
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export function DashboardClient({ data }: { data: DashboardData }) {
+export function DashboardClient({ data, showMacros }: { data: DashboardData; showMacros: boolean }) {
   const { coachName, totalClients, attentionClients, onTrackCount, macroCompliancePct, recentCheckIns, checkInBars } = data;
 
   const triageItems         = attentionClients.map(toTriageItem);
@@ -213,8 +213,10 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             </Link>
           </div>
 
-          {/* Stat cards */}
-          <div className="mb-6 grid gap-4 sm:grid-cols-3">
+          {/* Stat cards. The macro-compliance tile is a per-coach presentation
+              dial (showMacros); when off the grid collapses to two columns so
+              the remaining tiles stay flush. */}
+          <div className={cn("mb-6 grid gap-4", showMacros ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
             <StatCard
               icon={Users}
               tone="accent"
@@ -231,14 +233,16 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               value={needsAttentionCount.toString()}
               cap="flagged by engine"
             />
-            <StatCard
-              icon={BarChart3}
-              tone="green"
-              eyebrow={macroCompliancePct !== null ? "7-DAY AVG" : "NO CHECK-INS"}
-              label="Macro compliance"
-              value={macroCompliancePct !== null ? `${macroCompliancePct}%` : "—"}
-              cap="across roster"
-            />
+            {showMacros && (
+              <StatCard
+                icon={BarChart3}
+                tone="green"
+                eyebrow={macroCompliancePct !== null ? "7-DAY AVG" : "NO CHECK-INS"}
+                label="Macro compliance"
+                value={macroCompliancePct !== null ? `${macroCompliancePct}%` : "—"}
+                cap="across roster"
+              />
+            )}
           </div>
 
           {/* Main two-column body */}
