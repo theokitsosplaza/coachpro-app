@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { verifyCoachSession } from '@/lib/dal'
+import { deleteOrphanedAuthUser } from '@/lib/auth-user-cleanup'
 
 async function getOwnedClient(clientId: string, coachId: string) {
   const client = await prisma.client.findUnique({
@@ -41,6 +42,15 @@ export async function deleteClient(clientId: string) {
   if (!client.archivedAt) {
     throw new Error('Client must be archived before deleting.')
   }
-  await prisma.client.delete({ where: { id: clientId } })
+  // Capture the auth-user link from the deleted row, then clean it up AFTER the
+  // row is gone (DB-first). Best-effort — a cleanup failure won't undo the delete,
+  // and it skips any auth user still referenced by a Coach.
+  const deleted = await prisma.client.delete({
+    where: { id: clientId },
+    select: { authUserId: true },
+  })
+  if (deleted.authUserId) {
+    await deleteOrphanedAuthUser(deleted.authUserId)
+  }
   revalidatePath('/clients')
 }

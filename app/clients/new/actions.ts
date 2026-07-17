@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { verifyCoachSession } from '@/lib/dal'
+import { deleteOrphanedAuthUser } from '@/lib/auth-user-cleanup'
 
 export type FormErrors = {
   name?: string
@@ -155,16 +156,11 @@ export async function updateClient(
   const currentEmailNorm = current.email ? current.email.trim().toLowerCase() : null
   const emailChanged = result.data.email !== currentEmailNorm
 
-  if (emailChanged && current.authUserId) {
-    // The Supabase auth user tied to the OLD email is intentionally left in place
-    // for now (no destructive deletion). It becomes an orphan until a follow-up
-    // cleanup task reconciles it — do NOT delete here.
-    console.warn('[updateClient] email changed — orphaning auth user', {
-      clientId,
-      orphanedAuthUserId: current.authUserId,
-    })
-  }
-
+  // On an email change the old auth user (bound to the old email) is detached
+  // from this client (authUserId -> null). Capture it now so we can delete it
+  // AFTER the DB write succeeds — DB-first, so a failed write can never strand a
+  // live Client against a deleted auth user.
+  const oldAuthUserId = emailChanged ? current.authUserId : null
   const updateData = emailChanged ? { ...result.data, authUserId: null } : result.data
 
   try {
@@ -178,6 +174,13 @@ export async function updateClient(
       _form: 'Something went wrong saving to the database. Please try again.',
       _values,
     }
+  }
+
+  // Best-effort cleanup of the now-detached auth user. Never throws (see
+  // deleteOrphanedAuthUser) and skips anything still referenced by a Coach, so
+  // the redirect below always fires.
+  if (oldAuthUserId) {
+    await deleteOrphanedAuthUser(oldAuthUserId)
   }
 
   redirect(`/clients/${clientId}`)
