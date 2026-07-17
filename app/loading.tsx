@@ -1,16 +1,37 @@
+"use client";
+
+import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PortalSkeleton } from "@/components/portal-skeleton";
 
-// Instant skeleton shown while the dashboard server component fetches its data
-// and runs the triage engine. Mirrors DashboardClient's shell (sidebar +
-// max-w-7xl main) so a click gives immediate feedback and the real page settles
-// in without a layout jump.
+// Root loading fallback — the default for every route that lacks its own.
 //
-// This is the ROOT loading.tsx, so it is also the default fallback for coach
-// routes that lack their own (e.g. /calendar, /programs) — acceptable, they
-// share this dark sidebar shell. The client portal is deliberately shielded by
-// app/portal/loading.tsx so this coach skeleton never leaks into it.
-export default function DashboardLoading() {
+// The client portal (VitaeForce, white-labeled) shares this fallback too, and
+// that is the whole problem this file solves: the portal's (protected) layout
+// accesses runtime data (cookies + DB via verifyClientSession), and per Next's
+// rules a *segment* loading.js does NOT render a fallback for a layout's runtime
+// data (and this app doesn't use Cache Components / PPR, so an inner <Suspense>
+// can't shield it either on a hard navigation). The portal's suspension therefore
+// bubbles all the way up to THIS root fallback. Rendering the coach dashboard
+// skeleton — which includes the coach <Sidebar/> — would flash coach chrome on
+// the client's white-labeled portal.
+//
+// Fix: this fallback is a Client Component that branches on the pathname —
+// the VitaeForce portal skeleton for /portal/*, the coach dashboard skeleton
+// everywhere else. usePathname() is available (and correct) during the streamed
+// SSR of the fallback, so the very first paint is already route-appropriate.
+export default function RootLoading() {
+  const pathname = usePathname();
+
+  if (pathname?.startsWith("/portal")) {
+    return <PortalSkeleton />;
+  }
+
+  // Coach dashboard skeleton. Mirrors DashboardClient's shell (sidebar +
+  // max-w-7xl main) so a click gives immediate feedback and the real page
+  // settles in without a layout jump. Also the default for coach routes that
+  // lack their own loading.tsx (e.g. /calendar, /programs).
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
