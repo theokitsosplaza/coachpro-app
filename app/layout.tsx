@@ -1,28 +1,37 @@
 import './globals.css'
-import { Bricolage_Grotesque, Hanken_Grotesk, JetBrains_Mono } from 'next/font/google'
+import { Manrope, IBM_Plex_Mono } from 'next/font/google'
 import type { Metadata } from 'next'
 
 // ── Typography foundation ──────────────────────────────────────────────────
-// Three fonts, each exposed as a CSS custom property so globals.css and
-// @theme can wire them into Tailwind utilities (font-display, font-sans,
-// font-mono) and individual components can reference them directly.
+// Two fonts, each exposed as a CSS custom property that globals.css maps onto
+// Tailwind's font-sans / font-display / font-mono utilities.
+//
+// Manrope replaces the old Bricolage + Hanken pair: it carries both headings
+// (800) and body (600), so there is no separate display face any more.
+// font-display still resolves — it just points at Manrope now — which keeps
+// the ~27 existing `font-display` headings rendering.
 
-const bricolage = Bricolage_Grotesque({
-  subsets: ['latin'],
+const manrope = Manrope({
+  // 'greek' is load-bearing: client names are routinely Greek.
+  subsets: ['latin', 'greek'],
   display: 'swap',
-  variable: '--font-display',   // page titles, client names, big headers
+  // Manrope is a variable font (200–800), so it needs no weight list — one
+  // file covers every weight the design uses (400/500/600/700/800).
+  variable: '--font-manrope',
 })
 
-const hanken = Hanken_Grotesk({
+const plexMono = IBM_Plex_Mono({
+  // No 'greek' here — IBM Plex Mono has no Greek subset, and next/font throws
+  // on an unsupported subset. The mono is digits-only (times, counts, stats),
+  // so latin is enough.
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-body',      // default UI text, labels, paragraphs, buttons
-})
-
-const jetbrains = JetBrains_Mono({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-mono',      // every standalone number — weights, macros, %s
+  // Plex Mono is NOT variable — every weight is a separate static file, so
+  // each one used must be listed or the browser falls back to the nearest.
+  // 500/600 are the reference's; 700 covers the existing `font-mono font-bold`
+  // numbers, which font-synthesis:none would otherwise render at 600.
+  weight: ['500', '600', '700'],
+  variable: '--font-plex-mono',
 })
 
 export const metadata: Metadata = {
@@ -45,14 +54,11 @@ export const metadata: Metadata = {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  // Apply all three font variables to <html> so they are available as CSS
-  // custom properties throughout the entire document. The actual class that
-  // uses --font-body as the default is set in globals.css on <body>.
+  // Both font variables go on <html> so they are available as CSS custom
+  // properties throughout the document. globals.css sets Manrope as the body
+  // default from --font-manrope.
   return (
-    <html
-      lang="en"
-      className={`${bricolage.variable} ${hanken.variable} ${jetbrains.variable}`}
-    >
+    <html lang="en" className={`${manrope.variable} ${plexMono.variable}`}>
       <body>{children}</body>
     </html>
   )

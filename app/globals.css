@@ -15,19 +15,23 @@
 
   /* ── Core tokens — one cohesive dark theme, aligned with the v2 palette
      below so token-based pages, the sidebar, and the portal all match. ── */
-  --background:        #0B0C0E;
+  --background:        #08090B;
   --foreground:        #F4F5F6;
   --card:              #191B1F;
   --card-foreground:   #F4F5F6;
   --muted:             #212327;
   --muted-foreground:  #9AA0A8;
   --border:            #292C31;
-  --sidebar:           #0E0F12;
+  --sidebar:           #0B0D11;   /* Vimafy page-one sidebar surface */
   --sidebar-foreground:#F4F5F6;
   --sidebar-muted:     #8A9099;
   --sidebar-accent:    #1C1E22;
   --sidebar-active:    #292C31;
-  --accent:            #4D7CFE;
+  /* --accent is the white-label hook: set it on an app-root wrapper at runtime
+     and every accent-tinted surface below re-tints with it, no rebuild. That
+     only holds while accent tints stay color-mix() of var(--accent) — never
+     hardcode a tint of the blue. */
+  --accent:            #3B7BFF;
   --accent-foreground: #ffffff;
   --success:           #34D399;
   --success-muted:     rgba(52,  211, 153, 0.13);
@@ -35,14 +39,38 @@
   --warning-muted:     rgba(251, 191, 36,  0.13);
   --anomaly:           #FB7185;
   --anomaly-muted:     rgba(251, 113, 133, 0.13);
-  --copilot-glow:      #4D7CFE;
-  --ring:              #4D7CFE;
+  --copilot-glow:      var(--accent);
+  --ring:              var(--accent);
 
   /* ── Design System v2 — surfaces (warm graphite, layered for depth) ── */
-  --bg:        #0B0C0E;
+  --bg:        #08090B;
   --surface-1: #131417;
   --surface-2: #191B1F;
   --surface-3: #232629;
+
+  /* ── Vimafy page-one palette ─────────────────────────────────────────────
+     The reference calls these --surface / --surface-2 / --muted{,-2,-3}. Two
+     of those names already mean something else here, so they are renamed
+     rather than redefined:
+       reference --surface-2 (recessed row) → --surface-deep
+         (this file's --surface-2 is a *card*, lighter than the page — taking
+          the name would inverse the ramp under 13 files of bg-surface-2)
+       reference --muted{,-2,-3} (text greys) → --muted-1/-2/-3
+         (--muted here is a dark *background*, used by bg-muted in 23 files)
+     Everything else keeps the reference's name.                            */
+  --surface:      #14161B;
+  --surface-deep: #0F1116;
+  --text:         #EEF1F5;
+  --muted-1:      #B2B9C4;
+  --muted-2:      #828A96;
+  --muted-3:      #69707C;
+  --nav:          #B8BFCA;
+  --accent-lite:  #9DBEFF;
+  --green:        #35C98A;
+  --amber:        #E8B23E;
+  --red:          #EF5D5D;
+  --hair:         rgba(255,255,255,.07);
+  --hair-2:       rgba(255,255,255,.09);
 
   /* ── Design System v2 — borders ─────────────────────────────────────── */
   --border-strong: #3A3E43;
@@ -52,11 +80,14 @@
   --text-secondary: #A8ADB4;
   --text-muted-ds:  #6E747C;   /* suffix avoids clash with legacy --muted */
 
-  /* ── Design System v2 — accent extensions ───────────────────────────── */
-  --accent-hover: #6A93FF;
-  --accent-press: #3A66E0;
-  --accent-soft:  rgba(77, 124, 254, 0.12);
-  --accent-ring:  rgba(77, 124, 254, 0.45);
+  /* ── Design System v2 — accent extensions ─────────────────────────────
+     Derived from var(--accent), not hardcoded, so a per-coach brand colour
+     carries into hover/press/tints too. A hardcoded blue here would leave a
+     green-accented coach with blue hover states. */
+  --accent-hover: color-mix(in oklab, var(--accent) 84%, #FFFFFF);
+  --accent-press: color-mix(in oklab, var(--accent) 88%, #000000);
+  --accent-soft:  color-mix(in oklab, var(--accent) 12%, transparent);
+  --accent-ring:  color-mix(in oklab, var(--accent) 45%, transparent);
 
   /* ── Design System v2 — status palette (client triage only) ─────────── */
   --status-green:      #34D399;
@@ -136,26 +167,62 @@
   --color-macro-carbs:     var(--macro-carbs);   /* text-macro-carbs    */
   --color-macro-fats:      var(--macro-fats);    /* text-macro-fats     */
 
+  /* Vimafy page-one palette — see the :root block for the two renames */
+  --color-surface:       var(--surface);      /* bg-surface        */
+  --color-surface-deep:  var(--surface-deep); /* bg-surface-deep   */
+  --color-text:          var(--text);         /* text-text         */
+  --color-muted-1:       var(--muted-1);      /* text-muted-1      */
+  --color-muted-2:       var(--muted-2);      /* text-muted-2      */
+  --color-muted-3:       var(--muted-3);      /* text-muted-3      */
+  --color-nav:           var(--nav);          /* text-nav          */
+  --color-accent-lite:   var(--accent-lite);  /* text-accent-lite  */
+  --color-green:         var(--green);        /* text-green        */
+  --color-amber:         var(--amber);        /* text-amber        */
+  --color-red:           var(--red);          /* text-red          */
+  --color-hair:          var(--hair);         /* border-hair       */
+  --color-hair-2:        var(--hair-2);       /* border-hair-2     */
+
   /* Typography — next/font exposes these as CSS vars on <html>;
      @theme wires them into Tailwind's font-sans / font-display / font-mono
-     utility classes at runtime via var() references.            */
-  --font-sans:    var(--font-body);     /* font-sans    → Hanken Grotesk   */
-  --font-display: var(--font-display);  /* font-display → Bricolage Grotesque */
-  --font-mono:    var(--font-mono);     /* font-mono    → JetBrains Mono   */
+     utility classes at runtime via var() references.
+     font-display is kept as an alias of Manrope rather than dropped: the new
+     system has no separate display face, and ~27 headings still use it. */
+  --font-sans:    var(--font-manrope), system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-manrope), system-ui, -apple-system, sans-serif;
+  --font-mono:    var(--font-plex-mono), 'IBM Plex Mono', ui-monospace, monospace;
 }
 
 /* The theme is a single cohesive dark palette defined in :root above — there
    is deliberately no prefers-color-scheme light variant, so the product looks
    identical regardless of the coach's OS setting. */
 
+/* Accessibility guardrail carried over from the page-one reference: honour the
+   OS "reduce motion" setting everywhere by near-instantly resolving animations
+   and transitions. Only active when the user has opted in, so it changes
+   nothing for everyone else. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ── Base body styles ─────────────────────────────────────────────────────── */
 body {
   background: var(--background);
   color: var(--foreground);
-  /* Use the new body font (Hanken Grotesk) when next/font has loaded it;
-     fall back gracefully so the page never renders without a font. */
-  font-family: var(--font-body, system-ui, sans-serif);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Manrope when next/font has loaded it; fall back gracefully so the page
+     never renders without a font. */
+  font-family: var(--font-manrope, system-ui, sans-serif);
+  /* Manrope 600 is the base body weight in this design, not 400 — the dashboard
+     reads as dense/technical because of it. Anything lighter is opt-in. */
+  font-weight: 600;
+  /* subpixel (not greyscale) antialiasing keeps Manrope from thinning out on
+     the near-black background; font-synthesis:none forbids faux-bolding a
+     weight the font doesn't ship — it should fall back to a real one instead. */
+  -webkit-font-smoothing: subpixel-antialiased;
+  font-synthesis: none;
   text-rendering: optimizeLegibility;
 }

@@ -45,6 +45,12 @@ function resolveActiveItem(pathname: string, override?: string): string {
 type SidebarProps = {
   activeItem?: string;
   coachName?: string;
+  /**
+   * Optional live count for the amber Triage Board badge (the reference's "2").
+   * Presentation is ready, but the badge only renders when a real, positive
+   * count is passed — no caller wires it yet, so nothing fabricates a number.
+   */
+  triageCount?: number;
 };
 
 function toInitials(name: string): string {
@@ -54,15 +60,17 @@ function toInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export function Sidebar({ activeItem, coachName }: SidebarProps) {
+export function Sidebar({ activeItem, coachName, triageCount }: SidebarProps) {
   const pathname = usePathname();
   const active = resolveActiveItem(pathname, activeItem);
   const displayName = coachName?.trim() || "Coach";
   const initials = toInitials(displayName);
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r border-sidebar-accent bg-sidebar text-sidebar-foreground lg:w-60">
-      <div className="flex h-14 items-center border-b border-sidebar-accent px-5">
+    <aside className="flex w-56 shrink-0 flex-col border-r border-hair bg-sidebar px-4 py-5 text-sidebar-foreground lg:w-60">
+      {/* Brand — keep the real Vimafy lockup asset (the reference's gradient
+          square was a placeholder stand-in for it). */}
+      <div className="flex items-center px-2 pb-4 pt-1.5">
         <Image
           src="/brand/vimafy-lockup-dark.svg"
           alt="Vimafy"
@@ -74,14 +82,39 @@ export function Sidebar({ activeItem, coachName }: SidebarProps) {
         />
       </div>
 
-      <nav className="flex flex-1 flex-col gap-0.5 p-3" aria-label="Main navigation">
+      <div className="px-3 pb-1.5 pt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-3">
+        Workspace
+      </div>
+
+      <nav className="flex flex-col gap-1.5" aria-label="Main navigation">
         {NAV_ITEMS.map(({ id, label, href, icon: Icon }) => {
           const isActive = id === active;
-          const className = cn(
-            "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-            isActive
-              ? "bg-sidebar-active text-sidebar-foreground"
-              : "text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          const rowClass = cn(
+            "relative flex w-full items-center gap-3 rounded-[11px] px-3 py-2.5 text-sm font-semibold transition-colors",
+            isActive ? "text-white" : "text-nav hover:text-white"
+          );
+
+          const inner = (
+            <>
+              {isActive && (
+                <>
+                  <span className="pointer-events-none absolute inset-0 rounded-[11px] bg-[color-mix(in_oklab,var(--accent)_15%,transparent)]" />
+                  <span className="pointer-events-none absolute -left-4 top-1/2 h-[19px] w-[3px] -translate-y-1/2 rounded-r-[3px] bg-accent" />
+                </>
+              )}
+              <Icon className="relative h-[19px] w-[19px] shrink-0" strokeWidth={1.8} />
+              <span className="relative flex-1">{label}</span>
+              {id === "triage" && triageCount ? (
+                <span className="relative rounded-md bg-[color-mix(in_oklab,var(--amber)_18%,transparent)] px-[7px] py-0.5 font-mono text-[11px] font-semibold text-amber">
+                  {triageCount}
+                </span>
+              ) : null}
+              {id === "ai-checkins" && (
+                <span className="relative rounded-md bg-[color-mix(in_oklab,var(--accent)_16%,transparent)] px-[7px] py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-accent-lite">
+                  AI
+                </span>
+              )}
+            </>
           );
 
           if (href === "#") {
@@ -90,10 +123,9 @@ export function Sidebar({ activeItem, coachName }: SidebarProps) {
                 key={id}
                 type="button"
                 disabled
-                className={cn(className, "cursor-not-allowed opacity-50")}
+                className={cn(rowClass, "cursor-not-allowed opacity-50")}
               >
-                <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-                {label}
+                {inner}
               </button>
             );
           }
@@ -102,37 +134,32 @@ export function Sidebar({ activeItem, coachName }: SidebarProps) {
             <Link
               key={id}
               href={href}
-              className={className}
+              className={rowClass}
               aria-current={isActive ? "page" : undefined}
             >
-              <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-              {label}
-              {id === "ai-checkins" && (
-                <span className="ml-auto rounded-full bg-accent/20 px-1.5 py-0.5 text-[10px] font-semibold text-accent">
-                  AI
-                </span>
-              )}
+              {inner}
             </Link>
           );
         })}
       </nav>
 
-      <div className="border-t border-sidebar-accent p-4">
-        <div className="flex items-center gap-3 rounded-lg bg-sidebar-accent px-3 py-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-active text-xs font-semibold">
+      <div className="mt-auto border-t border-hair pt-3.5">
+        <div className="flex items-center gap-3 px-2 py-2">
+          <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px] bg-[color-mix(in_oklab,var(--accent)_20%,#14161B)] text-[13px] font-bold text-accent-lite">
             {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{displayName}</p>
-            <p className="truncate text-xs text-sidebar-muted">Coach</p>
+            <p className="truncate text-[13.5px] font-bold leading-tight text-text">{displayName}</p>
+            <p className="truncate text-[11.5px] font-semibold text-muted-2">Coach</p>
           </div>
           <form action={logout}>
             <button
               type="submit"
               title="Sign out"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-sidebar-muted hover:bg-sidebar-active hover:text-sidebar-foreground transition-colors"
+              aria-label="Sign out"
+              className="flex shrink-0 items-center justify-center rounded-lg p-1.5 text-muted-3 transition-colors hover:bg-white/[0.04] hover:text-white"
             >
-              <LogOut className="h-3.5 w-3.5" strokeWidth={2} />
+              <LogOut className="h-[17px] w-[17px]" strokeWidth={1.9} />
             </button>
           </form>
         </div>
