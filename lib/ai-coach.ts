@@ -350,9 +350,17 @@ export async function generateCoachOutput(
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-6', // override via env if needed
-        temperature: 0.35, // low randomness: we want consistent, fact-grounded narration
-        max_tokens: 1024,  // raised from 700 — Anthropic requires an explicit budget
+        model: process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5', // override via env if needed
+        // NOTE: `temperature` is intentionally omitted. Claude 5-family models
+        // (incl. claude-sonnet-5) reject temperature/top_p/top_k with a 400.
+        // Consistency is steered by the strict system prompt (the Synthesis is the
+        // source of truth), not a sampling parameter.
+        // thinking is explicitly DISABLED: on Sonnet 5, omitting `thinking` turns
+        // adaptive thinking ON, whose tokens count against max_tokens and would
+        // truncate this small JSON reply. This layer only narrates the engine's
+        // deterministic output, so thinking adds latency/cost for no benefit.
+        thinking: { type: 'disabled' },
+        max_tokens: 1024,  // enough for coachSummary + clientMessage + attention JSON
         system: systemPrompt, // top-level field, not inside messages
         messages: [
           { role: 'user', content: userPrompt },
