@@ -3,19 +3,18 @@ import { Sidebar } from "@/components/sidebar";
 
 export default function ProgramsPage() {
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-bg">
       <Sidebar />
-      <div className="flex flex-1 flex-col items-center justify-center gap-5 px-8 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-card">
-          <Dumbbell className="h-7 w-7 text-muted-foreground" strokeWidth={1.5} />
+      <div className="flex flex-1 flex-col items-center justify-center px-10 text-center">
+        <div className="mb-[22px] flex h-16 w-16 items-center justify-center rounded-[18px] border border-hair bg-surface text-muted-3">
+          <Dumbbell className="h-[30px] w-[30px]" strokeWidth={1.7} />
         </div>
-        <div className="space-y-2">
-          <h1 className="text-xl font-bold text-foreground">Programs</h1>
-          <p className="max-w-sm text-sm text-muted-foreground">
-            Build reusable training and nutrition templates, assign them to clients, and track results over time.
-          </p>
-        </div>
-        <span className="rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-semibold text-muted-foreground">
+        <h1 className="mb-2.5 font-display text-[22px] font-extrabold tracking-[-0.01em] text-text">Programs</h1>
+        <p className="mb-[22px] max-w-[420px] text-sm leading-relaxed text-muted-1">
+          Build reusable training and nutrition templates, assign them to clients, and track results over time.
+        </p>
+        <span className="inline-flex items-center gap-[7px] rounded-full border border-[color-mix(in_oklab,var(--accent)_26%,transparent)] bg-[color-mix(in_oklab,var(--accent)_12%,transparent)] px-[15px] py-2 text-[12.5px] font-bold text-accent-lite">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent-lite)]" />
           Coming soon
         </span>
       </div>

@@ -68,9 +68,11 @@ export function Sidebar({ activeItem, coachName, triageCount }: SidebarProps) {
 
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-hair bg-sidebar px-4 py-5 text-sidebar-foreground lg:w-60">
-      {/* Brand — keep the real Vimafy lockup asset (the reference's gradient
-          square was a placeholder stand-in for it). */}
-      <div className="flex items-center px-2 pb-4 pt-1.5">
+      {/* Brand — keep the real Vimafy lockup asset (the design's gradient
+          square was a placeholder stand-in for it). Sized to anchor the top of
+          the rail; h-11 is near the ceiling before the wordmark clips at the
+          narrow w-56 width (lockup ratio ~3.67 → ~162px wide inside px-2). */}
+      <div className="flex items-center px-2 pb-5 pt-2.5">
         <Image
           src="/brand/vimafy-lockup-dark.svg"
           alt="Vimafy"
@@ -78,7 +80,7 @@ export function Sidebar({ activeItem, coachName, triageCount }: SidebarProps) {
           height={128}
           priority
           unoptimized
-          className="h-8 w-auto"
+          className="h-11 w-auto"
         />
       </div>
 

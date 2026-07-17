@@ -110,11 +110,13 @@ type AnalysisResult = {
 
 // ── Colour helpers ────────────────────────────────────────────────────────────
 
-const FLAG_STYLES: Record<FlagColor, string> = {
-  danger:  "bg-anomaly-muted text-anomaly border-anomaly/25",
-  warning: "bg-warning-muted text-warning border-warning/30",
-  success: "bg-success-muted text-success border-success/25",
-  neutral: "bg-muted text-muted-foreground border-border",
+// Status → text colour (design system v2 tokens). The queue dot, the metric
+// value, and the badges all resolve their colour through this map.
+const STATUS_TEXT: Record<FlagColor, string> = {
+  danger:  "text-red",
+  warning: "text-amber",
+  success: "text-green",
+  neutral: "text-muted-2",
 };
 
 function sleepColor(score: number): FlagColor {
@@ -161,7 +163,8 @@ const ACTION_GUIDANCE: Record<string, { dont: string[]; do: string[] }> = {
 
 function FlagBadge({ label, color }: { label: string; color: FlagColor }) {
   return (
-    <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap", FLAG_STYLES[color])}>
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap text-[11px] font-semibold", STATUS_TEXT[color])}>
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
       {label}
     </span>
   );
@@ -170,22 +173,16 @@ function FlagBadge({ label, color }: { label: string; color: FlagColor }) {
 function InsightStat({ label, value, delta, color, icon: Icon }: {
   label: string; value: string; delta?: string; color: FlagColor; icon: typeof Scale;
 }) {
-  const border: Record<FlagColor, string> = {
-    danger:  "border-anomaly/30 bg-anomaly-muted/40",
-    warning: "border-warning/30 bg-warning-muted/40",
-    success: "border-success/25 bg-success-muted/30",
-    neutral: "border-border bg-muted/20",
-  };
-  const text: Record<FlagColor, string> = {
-    danger: "text-anomaly", warning: "text-warning", success: "text-success", neutral: "text-foreground",
+  const valueText: Record<FlagColor, string> = {
+    danger: "text-red", warning: "text-amber", success: "text-green", neutral: "text-text",
   };
   return (
-    <div className={cn("rounded-lg border p-3.5", border[color])}>
-      <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+    <div className="rounded-[14px] border border-hair bg-surface p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-1">
         <Icon className="h-3.5 w-3.5" />{label}
       </div>
-      <p className={cn("mt-1.5 font-mono text-2xl font-bold tabular-nums tracking-tight", text[color])}>{value}</p>
-      {delta && <p className="mt-1 text-[11px] text-muted-foreground">{delta}</p>}
+      <p className={cn("mt-3.5 font-mono text-[26px] font-medium tabular-nums tracking-[-0.02em]", valueText[color])}>{value}</p>
+      {delta && <p className="mt-1.5 text-[11.5px] text-muted-2">{delta}</p>}
     </div>
   );
 }
@@ -200,27 +197,25 @@ function ReflectionCard({ name, reflection }: { name: string; reflection: string
   const text = reflection?.trim();
   return (
     <section aria-label={`${name}'s check-in reflection`}>
-      <div className="rounded-xl border border-border bg-card shadow-sm">
-        <div className="flex items-center gap-2.5 border-b border-border px-5 py-3.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/10">
-            <Quote className="h-4 w-4 text-accent" strokeWidth={2} />
+      <div className="rounded-2xl border border-hair bg-surface p-[22px] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+        <div className="mb-3.5 flex items-center gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-surface-3 text-muted-1">
+            <Quote className="h-4 w-4" strokeWidth={2} />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-foreground">In {name}&apos;s own words</h2>
-            <p className="text-[11px] text-muted-foreground">The client&apos;s written reflection for this check-in</p>
+            <h2 className="text-[13.5px] font-bold text-text">In {name}&apos;s own words</h2>
+            <p className="text-[11.5px] text-muted-2">The client&apos;s written reflection for this check-in</p>
           </div>
         </div>
-        <div className="px-5 py-4">
-          {text ? (
-            <blockquote className="whitespace-pre-wrap border-l-2 border-accent/40 pl-4 text-[15px] leading-relaxed text-foreground/90">
-              {text}
-            </blockquote>
-          ) : (
-            <p className="text-sm italic text-muted-foreground">
-              No written reflection was included with this check-in.
-            </p>
-          )}
-        </div>
+        {text ? (
+          <blockquote className="whitespace-pre-wrap border-l-2 border-[color-mix(in_oklab,var(--accent)_45%,transparent)] pl-4 text-[14.5px] italic leading-[1.65] text-text/85">
+            {text}
+          </blockquote>
+        ) : (
+          <p className="text-sm italic text-muted-2">
+            No written reflection was included with this check-in.
+          </p>
+        )}
       </div>
     </section>
   );
@@ -242,76 +237,81 @@ function LeftPanel({ clients, selectedId, onSelect }: {
   }
 
   return (
-    <aside className="flex w-80 shrink-0 flex-col border-r border-border bg-card xl:w-96">
-      <div className="border-b border-border px-5 py-4">
+    <aside className="flex w-[334px] shrink-0 flex-col border-r border-hair bg-sidebar">
+      <div className="border-b border-hair px-5 py-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-secondary">Check-in Queue</h2>
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#C7CDD6]">Check-in Queue</h2>
           {pending > 0 && (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 font-mono text-[11px] font-bold tabular-nums text-accent-foreground">
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-[7px] bg-[color-mix(in_oklab,var(--accent)_18%,transparent)] px-1.5 font-mono text-[11px] font-semibold tabular-nums text-accent-lite">
               {pending}
             </span>
           )}
         </div>
-        <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Clock className="h-3 w-3" />
-          <span className="font-mono tabular-nums text-secondary">{clients.length}</span> clients ·{" "}
-          <span className="font-mono tabular-nums text-secondary">{pending}</span> pending review
+        <p className="mt-1.5 text-[12.5px] text-muted-2">
+          <span className="font-mono tabular-nums text-muted-1">{clients.length}</span> clients ·{" "}
+          <span className="font-mono tabular-nums text-muted-1">{pending}</span> pending review
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto p-3">
         {clients.length === 0 && (
-          <p className="px-5 py-8 text-center text-sm text-muted-foreground">
+          <p className="px-2 py-8 text-center text-sm text-muted-2">
             No check-ins in the queue yet.
           </p>
         )}
-        {clients.map((client) => {
-          const isSelected = client.id === selectedId;
-          const flag = queueFlag(client.status);
-          return (
-            <button
-              key={client.id}
-              type="button"
-              onClick={() => onSelect(client.id)}
-              className={cn(
-                "group w-full border-b border-border/60 px-5 py-4 text-left transition-colors",
-                isSelected
-                  ? "border-l-2 border-l-accent bg-accent/8"
-                  : "border-l-2 border-l-transparent hover:bg-muted/40"
-              )}
-            >
-              <div className="flex items-start gap-3">
-                <div className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold",
-                  isSelected ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
-                )}>
-                  {client.initials}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className={cn("text-[15px] font-semibold tracking-[-0.005em]", isSelected ? "text-foreground" : "text-foreground/80")}>
-                      {client.name}
-                    </span>
-                    {client.submittedAt && (
-                      <span className="flex items-center gap-1 font-mono text-[11px] tabular-nums text-muted-foreground">
-                        <Clock className="h-2.5 w-2.5" />
-                        {new Date(client.submittedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+        <div className="flex flex-col gap-1.5">
+          {clients.map((client) => {
+            const isSelected = client.id === selectedId;
+            const flag = queueFlag(client.status);
+            return (
+              <button
+                key={client.id}
+                type="button"
+                onClick={() => onSelect(client.id)}
+                className={cn(
+                  "group relative w-full rounded-[13px] px-3.5 py-3.5 text-left transition-colors",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring",
+                  isSelected
+                    ? "bg-[color-mix(in_oklab,var(--accent)_10%,transparent)]"
+                    : "hover:bg-white/[0.03]"
+                )}
+              >
+                {isSelected && (
+                  <span className="pointer-events-none absolute bottom-3.5 left-0 top-3.5 w-[3px] rounded-r-[3px] bg-accent" aria-hidden />
+                )}
+                <div className="flex items-start gap-3">
+                  <div className={cn(
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] text-[13px] font-bold",
+                    isSelected ? "bg-accent text-white" : "bg-surface-3 text-muted-1"
+                  )}>
+                    {client.initials}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={cn("truncate text-[14px] font-bold", isSelected ? "text-text" : "text-text/85")}>
+                        {client.name}
                       </span>
-                    )}
-                  </div>
-                  <div className="mt-1.5">
-                    <FlagBadge label={flag.label} color={flag.color} />
+                      {client.submittedAt && (
+                        <span className="flex shrink-0 items-center gap-1 font-mono text-[11px] tabular-nums text-muted-2">
+                          <Clock className="h-2.5 w-2.5" />
+                          {new Date(client.submittedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1.5">
+                      <FlagBadge label={flag.label} color={flag.color} />
+                    </div>
                   </div>
                 </div>
-              </div>
-              {client.status === CHECK_IN_STATUS.Approved && (
-                <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground/70">
-                  <CheckCircle2 className="h-3 w-3" />Reviewed
-                </div>
-              )}
-            </button>
-          );
-        })}
+                {client.status === CHECK_IN_STATUS.Approved && (
+                  <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-3">
+                    <CheckCircle2 className="h-3 w-3" />Reviewed
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </aside>
   );
@@ -321,13 +321,13 @@ function LeftPanel({ clients, selectedId, onSelect }: {
 
 function LoadingPanel({ name }: { name: string }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-accent/30 bg-accent/8">
-        <Loader2 className="h-6 w-6 animate-spin text-accent" />
+    <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bg text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[color-mix(in_oklab,var(--accent)_30%,transparent)] bg-[color-mix(in_oklab,var(--accent)_10%,transparent)]">
+        <Loader2 className="h-6 w-6 animate-spin text-accent-lite" />
       </div>
       <div>
-        <p className="text-sm font-semibold text-foreground">Analysing {name}</p>
-        <p className="mt-1 text-xs text-muted-foreground">Running engine + Claude — this takes a few seconds</p>
+        <p className="text-sm font-bold text-text">Analysing {name}</p>
+        <p className="mt-1 text-xs text-muted-2">Running engine + Claude — this takes a few seconds</p>
       </div>
     </div>
   );
@@ -337,13 +337,13 @@ function LoadingPanel({ name }: { name: string }) {
 
 function ErrorPanel({ message }: { message: string }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-anomaly/30 bg-anomaly-muted">
-        <XCircle className="h-6 w-6 text-anomaly" />
+    <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bg px-8 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[color-mix(in_oklab,var(--red)_30%,transparent)] bg-[color-mix(in_oklab,var(--red)_12%,transparent)]">
+        <XCircle className="h-6 w-6 text-red" />
       </div>
       <div>
-        <p className="text-sm font-semibold text-foreground">Could not generate analysis</p>
-        <p className="mt-1 max-w-sm text-xs text-muted-foreground">{message}</p>
+        <p className="text-sm font-bold text-text">Could not generate analysis</p>
+        <p className="mt-1 max-w-sm text-xs text-muted-2">{message}</p>
       </div>
     </div>
   );
@@ -353,11 +353,11 @@ function ErrorPanel({ message }: { message: string }) {
 
 function EmptyPanel() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-muted">
-        <Sparkles className="h-6 w-6 text-muted-foreground" />
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-bg text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-hair bg-surface">
+        <Sparkles className="h-6 w-6 text-muted-2" />
       </div>
-      <p className="text-sm text-muted-foreground">Select a client from the queue to run the AI analysis</p>
+      <p className="text-sm text-muted-2">Select a client from the queue to run the AI analysis</p>
     </div>
   );
 }
@@ -432,44 +432,44 @@ function AnalysisPanel({
     <div className="flex flex-1 flex-col overflow-hidden">
 
       {/* ── Client context bar ─────────────────────────────────────────── */}
-      <div className="shrink-0 border-b border-border bg-card px-6 py-4">
+      <div className="shrink-0 border-b border-hair bg-sidebar px-8 py-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-[15px] font-bold text-accent">
+          <div className="flex min-w-0 items-center gap-3.5">
+            <div className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_oklab,var(--accent)_20%,#14161B)] text-[15px] font-bold text-accent-lite">
               {clientInput.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-display text-lg font-semibold tracking-tight text-foreground">{clientInput.name}</h1>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2.5">
+                <h1 className="font-display text-[19px] font-extrabold tracking-[-0.01em] text-text">{clientInput.name}</h1>
                 {isReview ? (
-                  <span className="rounded-full border border-anomaly/30 bg-anomaly-muted px-2 py-0.5 text-[10px] font-semibold text-anomaly">
-                    Safety Review
+                  <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-[color-mix(in_oklab,var(--red)_28%,transparent)] bg-[color-mix(in_oklab,var(--red)_14%,transparent)] px-2.5 py-1 text-[11px] font-bold text-red">
+                    <span className="h-1.5 w-1.5 rounded-full bg-red" />Safety Review
                   </span>
                 ) : latestCheckIn.status === CHECK_IN_STATUS.Approved ? (
-                  <span className="rounded-full border border-success/30 bg-success-muted px-2 py-0.5 text-[10px] font-semibold text-success">
-                    Approved
+                  <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-[color-mix(in_oklab,var(--green)_28%,transparent)] bg-[color-mix(in_oklab,var(--green)_14%,transparent)] px-2.5 py-1 text-[11px] font-bold text-green">
+                    <span className="h-1.5 w-1.5 rounded-full bg-green" />Approved
                   </span>
                 ) : (
-                  <span className="rounded-full border border-warning/30 bg-warning-muted px-2 py-0.5 text-[10px] font-semibold text-warning">
-                    Pending Review
+                  <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-[color-mix(in_oklab,var(--amber)_28%,transparent)] bg-[color-mix(in_oklab,var(--amber)_14%,transparent)] px-2.5 py-1 text-[11px] font-bold text-amber">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber" />Pending Review
                   </span>
                 )}
               </div>
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="mt-0.5 truncate text-[13px] text-muted-1">
                 {clientInput.currentPhase ?? clientInput.goal}
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs">
+          <div className="flex flex-wrap gap-2.5 text-xs">
             {[
-              { label: "Goal", value: clientInput.goal, icon: Target },
-              { label: "Protein target", value: `${clientInput.targetProtein} g/day`, icon: Activity },
-              { label: "Submitted", value: new Date(latestCheckIn.date).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }), icon: Clock },
-            ].map(({ label, value, icon: Icon }) => (
-              <div key={label} className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 px-2.5 py-1.5">
-                <Icon className="h-3 w-3 text-muted-foreground" />
-                <span className="text-muted-foreground">{label}:</span>
-                <span className="font-semibold text-foreground">{value}</span>
+              { label: "Goal", value: clientInput.goal, icon: Target, mono: false },
+              { label: "Protein target", value: `${clientInput.targetProtein} g/day`, icon: Activity, mono: true },
+              { label: "Submitted", value: new Date(latestCheckIn.date).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }), icon: Clock, mono: true },
+            ].map(({ label, value, icon: Icon, mono }) => (
+              <div key={label} className="flex items-center gap-2 rounded-[10px] border border-hair bg-surface-deep px-3 py-2">
+                <Icon className="h-3 w-3 text-muted-3" />
+                <span className="text-muted-2">{label}</span>
+                <span className={cn("text-[12.5px] font-semibold text-text", mono && "font-mono")}>{value}</span>
               </div>
             ))}
           </div>
@@ -477,22 +477,21 @@ function AnalysisPanel({
       </div>
 
       {/* ── Scrollable analysis content ────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-4xl space-y-6 px-6 py-6 xl:px-8">
+      <div className="flex-1 overflow-y-auto bg-bg">
+        <div className="mx-auto max-w-[900px] space-y-4 px-8 py-7">
 
           {/* AI model metadata bar */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-muted/20 px-4 py-2 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1.5 font-medium text-foreground">
-              <Sparkles className="h-3 w-3 text-accent" />CoachAI Copilot
+          <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 rounded-xl border border-[color-mix(in_oklab,var(--accent)_22%,transparent)] bg-[linear-gradient(90deg,color-mix(in_oklab,var(--accent)_10%,var(--surface-deep)),var(--surface-deep))] px-4 py-3">
+            <span className="flex items-center gap-2 text-[13px] font-bold text-text">
+              <Sparkles className="h-4 w-4 text-accent-lite" />CoachAI Copilot
             </span>
-            <span>Powered by Claude</span>
-            <span>·</span>
-            <span>Analysed just now</span>
-            <span>·</span>
-            <span className={cn("flex items-center gap-1 font-semibold", isReview ? "text-anomaly" : "text-success")}>
+            <span className="text-[12.5px] text-muted-1">Powered by Claude</span>
+            <span className="h-[3px] w-[3px] rounded-full bg-[#3B424C]" />
+            <span className="text-[12.5px] text-muted-1">Analysed just now</span>
+            <span className={cn("ml-auto flex items-center gap-1.5 text-[12px] font-semibold", isReview ? "text-red" : "text-green")}>
               {isReview
-                ? <><AlertTriangle className="h-3 w-3" />Safety flag active</>
-                : <><ShieldCheck className="h-3 w-3" />Engine passed</>
+                ? <><AlertTriangle className="h-3.5 w-3.5" />Safety flag active</>
+                : <><ShieldCheck className="h-3.5 w-3.5" />Engine passed</>
               }
             </span>
           </div>
@@ -531,21 +530,21 @@ function AnalysisPanel({
 
           {/* Safety / warning flags (if any) */}
           {flags.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {flags.map((flag) => (
                 <div
                   key={flag.code}
                   className={cn(
-                    "flex items-start gap-3 rounded-lg border p-3",
-                    flag.severity === "safety"  ? "border-anomaly/30 bg-anomaly-muted/40" :
-                    flag.severity === "warning" ? "border-warning/30 bg-warning-muted/40" :
-                                                  "border-border bg-muted/20"
+                    "flex items-start gap-3 rounded-[13px] border p-4",
+                    flag.severity === "safety"  ? "border-[color-mix(in_oklab,var(--red)_26%,transparent)] bg-[color-mix(in_oklab,var(--red)_8%,transparent)]" :
+                    flag.severity === "warning" ? "border-[color-mix(in_oklab,var(--amber)_26%,transparent)] bg-[color-mix(in_oklab,var(--amber)_8%,transparent)]" :
+                                                  "border-hair bg-surface-deep"
                   )}
                 >
-                  <AlertTriangle className={cn("mt-0.5 h-4 w-4 shrink-0", flag.severity === "safety" ? "text-anomaly" : flag.severity === "warning" ? "text-warning" : "text-muted-foreground")} />
+                  <AlertTriangle className={cn("mt-0.5 h-4 w-4 shrink-0", flag.severity === "safety" ? "text-red" : flag.severity === "warning" ? "text-amber" : "text-muted-2")} />
                   <div>
-                    <p className="text-sm font-semibold text-foreground">{flag.title}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{flag.detail}</p>
+                    <p className="text-sm font-bold text-text">{flag.title}</p>
+                    <p className="mt-0.5 text-xs text-muted-1">{flag.detail}</p>
                   </div>
                 </div>
               ))}
@@ -555,36 +554,34 @@ function AnalysisPanel({
           {/* Client's raw reflection — their own words, shown above the AI's take */}
           <ReflectionCard name={clientInput.name} reflection={latestCheckIn.clientReflection} />
 
-          {/* AI Synthesis card — the one hero: a single accent top edge marks it,
-              everything else stays on neutral surfaces. */}
+          {/* AI Synthesis card — the one hero: accent gradient + radial glow marks
+              it, everything else stays on neutral surfaces. */}
           <section aria-labelledby="synthesis-heading">
-            <div className="overflow-hidden rounded-xl border border-border bg-surface-2 shadow-sm">
-              <div className="h-0.5 bg-gradient-to-r from-accent to-accent/0" aria-hidden />
-              <div className="flex items-center gap-3 border-b border-border px-5 py-3.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-soft ring-1 ring-inset ring-accent/25">
-                  <Bot className="h-4 w-4 text-accent" strokeWidth={2} />
+            <div className="relative overflow-hidden rounded-2xl border border-[color-mix(in_oklab,var(--accent)_20%,transparent)] bg-[linear-gradient(180deg,color-mix(in_oklab,var(--accent)_6%,var(--surface)),var(--surface))] p-[22px]">
+              <span aria-hidden className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--accent)_18%,transparent),transparent_70%)]" />
+              <div className="relative mb-3.5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] bg-[color-mix(in_oklab,var(--accent)_22%,transparent)] text-accent-lite">
+                    <Bot className="h-[17px] w-[17px]" strokeWidth={1.9} />
+                  </div>
+                  <div>
+                    <h2 id="synthesis-heading" className="text-sm font-bold text-text">AI Synthesis</h2>
+                    <p className="text-[11.5px] text-muted-1">{clientInput.name} · latest check-in analysis</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 id="synthesis-heading" className="text-sm font-semibold text-foreground">AI Synthesis</h2>
-                  <p className="text-[11px] text-muted-foreground">{clientInput.name} · latest check-in analysis</p>
-                </div>
-                <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-accent ring-1 ring-inset ring-accent/25">
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-[color-mix(in_oklab,var(--accent)_28%,transparent)] bg-[color-mix(in_oklab,var(--accent)_16%,transparent)] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-accent-lite">
                   <Sparkles className="h-3 w-3" />Copilot
                 </span>
               </div>
-              <div className="space-y-4 px-5 py-5">
-                {/* Claude-written coach summary */}
-                <p className="text-[15px] leading-7 text-foreground/90">{aiOutput.coachSummary}</p>
-                {/* Engine's plain-language weight vs goal verdict */}
-                <div className="rounded-lg border border-accent/20 bg-accent-soft px-4 py-3">
-                  <div className="flex items-start gap-2">
-                    <Scale className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                    <p className="text-sm text-foreground/90">
-                      <span className="font-semibold text-accent">Engine verdict: </span>
-                      {weight.vsGoal}
-                    </p>
-                  </div>
-                </div>
+              {/* Claude-written coach summary */}
+              <p className="relative mb-4 text-[14.5px] leading-[1.7] text-text/90">{aiOutput.coachSummary}</p>
+              {/* Engine's plain-language weight vs goal verdict */}
+              <div className="relative flex items-start gap-2.5 rounded-[11px] border border-[color-mix(in_oklab,var(--accent)_24%,transparent)] bg-[color-mix(in_oklab,var(--accent)_10%,var(--surface-deep))] px-4 py-3">
+                <Scale className="mt-0.5 h-4 w-4 shrink-0 text-accent-lite" />
+                <p className="text-[13.5px] text-text/85">
+                  <span className="font-bold text-accent-lite">Engine verdict: </span>
+                  {weight.vsGoal}
+                </p>
               </div>
             </div>
           </section>
@@ -592,181 +589,194 @@ function AnalysisPanel({
           {/* AI Recommendation card — secondary to the Synthesis hero: neutral
               surface, with the semantic badge carrying the only colour. */}
           <section aria-labelledby="recommendation-heading">
-            <div className="overflow-hidden rounded-xl border border-border bg-surface-2 shadow-sm">
-              <div className="flex items-center gap-3 border-b border-border px-5 py-3.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-3 text-secondary">
-                  <Zap className="h-4 w-4" strokeWidth={2} />
-                </div>
-                <div>
-                  <h2 id="recommendation-heading" className="text-sm font-semibold text-foreground">AI Recommendation</h2>
-                  <p className="text-[11px] text-muted-foreground">Proposed plan for next microcycle</p>
+            <div className="rounded-2xl border border-hair bg-surface p-[22px] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "flex h-[34px] w-[34px] items-center justify-center rounded-[9px]",
+                    isReview
+                      ? "bg-[color-mix(in_oklab,var(--red)_18%,transparent)] text-red"
+                      : "bg-[color-mix(in_oklab,var(--green)_18%,transparent)] text-green"
+                  )}>
+                    <Zap className="h-[17px] w-[17px]" strokeWidth={1.9} />
+                  </div>
+                  <div>
+                    <h2 id="recommendation-heading" className="text-sm font-bold text-text">AI Recommendation</h2>
+                    <p className="text-[11.5px] text-muted-1">Proposed plan for next microcycle</p>
+                  </div>
                 </div>
                 <div className={cn(
-                  "ml-auto flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
+                  "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-bold",
                   isReview
-                    ? "border-anomaly/30 bg-anomaly-muted text-anomaly"
-                    : "border-success/30 bg-success-muted text-success"
+                    ? "border-[color-mix(in_oklab,var(--red)_26%,transparent)] bg-[color-mix(in_oklab,var(--red)_14%,transparent)] text-red"
+                    : "border-[color-mix(in_oklab,var(--green)_26%,transparent)] bg-[color-mix(in_oklab,var(--green)_14%,transparent)] text-green"
                 )}>
                   {isReview ? <><AlertTriangle className="h-3 w-3" />Human review required</> : <><ShieldCheck className="h-3 w-3" />Engine recommendation</>}
                 </div>
               </div>
 
-              <div className="space-y-4 px-5 py-5">
-                {/* Headline */}
-                <p className="text-sm font-semibold text-foreground">{recommendation.headline}</p>
-                <p className="text-sm text-muted-foreground">{recommendation.rationale}</p>
+              {/* Headline */}
+              <p className="text-[16px] font-bold tracking-[-0.01em] text-text">{recommendation.headline}</p>
+              <p className="mt-1.5 text-[13.5px] leading-[1.6] text-muted-1">{recommendation.rationale}</p>
 
-                {/* Do / Don't guidance */}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-lg border border-anomaly/25 bg-anomaly-muted/30 p-4">
-                    <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-anomaly">
-                      <AlertTriangle className="h-3.5 w-3.5" />Do not
-                    </div>
-                    <ul className="mt-2 space-y-1.5 text-sm text-foreground/90">
-                      {guidance.dont.map((item) => (
-                        <li key={item} className="flex items-start gap-2">
-                          <Minus className="mt-0.5 h-3.5 w-3.5 shrink-0 text-anomaly" />{item}
-                        </li>
-                      ))}
-                    </ul>
+              {/* Do / Don't guidance */}
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-[color-mix(in_oklab,var(--red)_22%,transparent)] bg-[color-mix(in_oklab,var(--red)_6%,transparent)] p-4">
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-red">
+                    <AlertTriangle className="h-3.5 w-3.5" />Do not
                   </div>
-                  <div className="rounded-lg border border-success/25 bg-success-muted/30 p-4">
-                    <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-success">
-                      <CheckCircle2 className="h-3.5 w-3.5" />Recommend
-                    </div>
-                    <ul className="mt-2 space-y-1.5 text-sm text-foreground/90">
-                      {guidance.do.map((item) => (
-                        <li key={item} className="flex items-start gap-2">
-                          <TrendingDown className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />{item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  <ul className="mt-2.5 space-y-2 text-[13px] text-text/80">
+                    {guidance.dont.map((item) => (
+                      <li key={item} className="flex items-start gap-2.5">
+                        <Minus className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red" />{item}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
+                <div className="rounded-xl border border-[color-mix(in_oklab,var(--green)_22%,transparent)] bg-[color-mix(in_oklab,var(--green)_6%,transparent)] p-4">
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-green">
+                    <CheckCircle2 className="h-3.5 w-3.5" />Recommend
+                  </div>
+                  <ul className="mt-2.5 space-y-2 text-[13px] text-text/80">
+                    {guidance.do.map((item) => (
+                      <li key={item} className="flex items-start gap-2.5">
+                        <TrendingDown className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green" />{item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
 
-                {/* Macro editor — shown when AI proposed or coach opened manually */}
-                {editedMacros && (
-                  <div className="rounded-lg border border-accent/25 bg-accent/5 p-4">
-                    <p className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      {recommendation.proposedMacros
-                        ? 'Proposed macro update — review & confirm before approving'
-                        : 'Manual macro edit — adjust targets before approving'}
-                    </p>
-                    <div className="grid grid-cols-3 gap-3">
-                      {([
-                        { key: 'protein', label: 'Protein', labelColor: 'text-macro-protein', current: clientInput.targetProtein },
-                        { key: 'carbs',   label: 'Carbs',   labelColor: 'text-macro-carbs',   current: clientInput.targetCarbs },
-                        { key: 'fats',    label: 'Fats',    labelColor: 'text-macro-fats',     current: clientInput.targetFats },
-                      ] as const).map(({ key, label, labelColor, current }) => (
-                        <div key={key}>
-                          <label className={cn('mb-1.5 block text-xs font-semibold', labelColor)}>
-                            {label}
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={editedMacros[key]}
-                              onChange={(e) => {
-                                const val = parseInt(e.target.value, 10);
-                                setEditedMacros((prev) =>
-                                  prev ? { ...prev, [key]: isNaN(val) ? 0 : Math.max(0, val) } : prev,
-                                );
-                                setMacroWarningsAcknowledged(false);
-                              }}
-                              disabled={approved}
-                              className="w-full rounded-lg border border-border bg-background py-2 pl-3 pr-8 text-sm font-semibold tabular-nums text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:opacity-50"
-                            />
-                            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                              g
-                            </span>
-                          </div>
-                          <p className="mt-1 text-[11px] text-muted-foreground">
-                            was {current} g
-                          </p>
+              {/* Macro editor — shown when AI proposed or coach opened manually */}
+              {editedMacros && (
+                <div className="mt-4 rounded-xl border border-hair bg-surface-deep p-4">
+                  <p className="mb-3.5 text-[11px] font-bold uppercase tracking-[0.07em] text-accent-lite">
+                    {recommendation.proposedMacros
+                      ? 'Proposed macro update — review & confirm before approving'
+                      : 'Manual macro edit — adjust targets before approving'}
+                  </p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {([
+                      { key: 'protein', label: 'Protein', labelColor: 'text-macro-protein', current: clientInput.targetProtein },
+                      { key: 'carbs',   label: 'Carbs',   labelColor: 'text-macro-carbs',   current: clientInput.targetCarbs },
+                      { key: 'fats',    label: 'Fats',    labelColor: 'text-macro-fats',     current: clientInput.targetFats },
+                    ] as const).map(({ key, label, labelColor, current }) => (
+                      <div key={key}>
+                        <label className={cn('mb-2 block text-xs font-semibold', labelColor)}>
+                          {label}
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={editedMacros[key]}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10);
+                              setEditedMacros((prev) =>
+                                prev ? { ...prev, [key]: isNaN(val) ? 0 : Math.max(0, val) } : prev,
+                              );
+                              setMacroWarningsAcknowledged(false);
+                            }}
+                            disabled={approved}
+                            className="w-full rounded-[10px] border border-white/10 bg-bg py-2.5 pl-3 pr-8 font-mono text-[15px] font-semibold tabular-nums text-text focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"
+                          />
+                          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-xs text-muted-2">
+                            g
+                          </span>
                         </div>
+                        <p className="mt-1.5 font-mono text-[11px] text-muted-2">
+                          was {current} g
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  {!macrosValid && (
+                    <p className="mt-2 text-xs text-red">
+                      All macro values must be 0 or greater before you can approve.
+                    </p>
+                  )}
+                  {macroWarnings.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {macroWarnings.map((w, i) => (
+                        <p key={i} className="text-xs text-red">{w}</p>
                       ))}
                     </div>
-                    {!macrosValid && (
-                      <p className="mt-2 text-xs text-anomaly">
-                        All macro values must be 0 or greater before you can approve.
-                      </p>
-                    )}
-                    {macroWarnings.length > 0 && (
-                      <div className="mt-2 space-y-1">
-                        {macroWarnings.map((w, i) => (
-                          <p key={i} className="text-xs text-anomaly">{w}</p>
-                        ))}
-                      </div>
-                    )}
-                    {macroWarnings.length > 0 && (
-                      <label
-                        htmlFor="macro-warnings-ack"
-                        className="mt-3 flex cursor-pointer select-none items-center gap-2.5"
-                      >
-                        <input
-                          id="macro-warnings-ack"
-                          type="checkbox"
-                          checked={macroWarningsAcknowledged}
-                          onChange={(e) => setMacroWarningsAcknowledged(e.target.checked)}
-                          className="h-4 w-4 shrink-0 cursor-pointer rounded"
-                        />
-                        <span className={cn(
-                          "text-xs font-medium leading-snug",
-                          macroWarningsAcknowledged ? "text-foreground" : "text-anomaly",
-                        )}>
-                          I&apos;ve reviewed these macro values and am proceeding with my own judgment
-                        </span>
-                      </label>
-                    )}
-                  </div>
-                )}
-
-                {/* Client message — editable before approving */}
-                {aiOutput.clientMessage && (
-                  <div className="rounded-lg border border-border bg-muted/20 p-4">
-                    <div className="mb-2 flex items-center justify-between gap-1.5">
-                      <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                        <MessageSquare className="h-3.5 w-3.5" />Client message — edit before approving
-                      </div>
-                      <span className="font-mono text-[11px] tabular-nums text-muted-foreground/70">
-                        {editedMessage.length}/1000
+                  )}
+                  {macroWarnings.length > 0 && (
+                    <label
+                      htmlFor="macro-warnings-ack"
+                      className="mt-3 flex cursor-pointer select-none items-center gap-2.5"
+                    >
+                      <input
+                        id="macro-warnings-ack"
+                        type="checkbox"
+                        checked={macroWarningsAcknowledged}
+                        onChange={(e) => setMacroWarningsAcknowledged(e.target.checked)}
+                        className="h-4 w-4 shrink-0 cursor-pointer rounded accent-[var(--accent)]"
+                      />
+                      <span className={cn(
+                        "text-xs font-medium leading-snug",
+                        macroWarningsAcknowledged ? "text-text" : "text-red",
+                      )}>
+                        I&apos;ve reviewed these macro values and am proceeding with my own judgment
                       </span>
+                    </label>
+                  )}
+                </div>
+              )}
+
+              {/* No proposal & not manually editing — hold current targets. Derived
+                  purely from existing state (editedMacros); no fabricated data. */}
+              {!editedMacros && (
+                <div className="mt-4 flex items-center gap-2.5 rounded-xl border border-hair bg-surface-deep px-4 py-3 text-[13px] text-muted-1">
+                  <CheckCircle2 className="h-[15px] w-[15px] shrink-0 text-green" />
+                  No macro change proposed this week — hold current targets.
+                </div>
+              )}
+
+              {/* Client message — editable before approving */}
+              {aiOutput.clientMessage && (
+                <div className="mt-4 rounded-xl border border-hair bg-surface-deep p-4">
+                  <div className="mb-2.5 flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-[#C7CDD6]">
+                      <MessageSquare className="h-3.5 w-3.5" />Client message — edit before approving
                     </div>
-                    <textarea
-                      value={editedMessage}
-                      onChange={(e) => setEditedMessage(e.target.value)}
-                      rows={4}
-                      maxLength={1000}
-                      disabled={approved}
-                      placeholder="Write a message for the client…"
-                      className={cn(
-                        "w-full resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-sm leading-relaxed text-foreground",
-                        "placeholder:text-muted-foreground/50 transition-colors",
-                        "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent",
-                        "disabled:opacity-50",
-                        !messageValid && "border-anomaly focus:ring-anomaly/30",
-                      )}
-                    />
-                    {!messageValid && (
-                      <p className="mt-1.5 text-xs text-anomaly">Message cannot be empty.</p>
-                    )}
+                    <span className="font-mono text-[11px] tabular-nums text-muted-2">
+                      {editedMessage.length}/1000
+                    </span>
                   </div>
-                )}
-              </div>
+                  <textarea
+                    value={editedMessage}
+                    onChange={(e) => setEditedMessage(e.target.value)}
+                    rows={4}
+                    maxLength={1000}
+                    disabled={approved}
+                    placeholder="Write a message for the client…"
+                    className={cn(
+                      "w-full resize-y rounded-[10px] border border-white/10 bg-bg px-3.5 py-3 text-[13.5px] leading-[1.6] text-text",
+                      "placeholder:text-muted-3 transition-colors",
+                      "focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-ring",
+                      "disabled:opacity-50",
+                      !messageValid && "border-red focus:ring-[color-mix(in_oklab,var(--red)_30%,transparent)]",
+                    )}
+                  />
+                  {!messageValid && (
+                    <p className="mt-1.5 text-xs text-red">Message cannot be empty.</p>
+                  )}
+                </div>
+              )}
             </div>
           </section>
 
-          <div className="h-2" />
         </div>
       </div>
 
       {/* ── Sticky action footer ────────────────────────────────────────── */}
-      <div className="shrink-0 border-t border-border bg-card/95 px-6 py-4 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 xl:px-2">
+      <div className="shrink-0 border-t border-hair bg-sidebar px-8 py-4">
+        <div className="mx-auto flex max-w-[900px] items-center justify-between gap-4">
           {approved ? (
-            <p className="flex items-center gap-1.5 text-xs font-medium text-success">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-green">
               <CheckCircle2 className="h-4 w-4" />
               Plan approved and saved for {clientInput.name}
             </p>
@@ -777,19 +787,22 @@ function AnalysisPanel({
                 type="checkbox"
                 checked={safetyAcknowledged}
                 onChange={(e) => setSafetyAcknowledged(e.target.checked)}
-                className="h-4 w-4 shrink-0 cursor-pointer rounded"
+                className="h-4 w-4 shrink-0 cursor-pointer rounded accent-[var(--accent)]"
               />
-              <span className={cn("text-xs font-medium leading-snug", safetyAcknowledged ? "text-foreground" : "text-anomaly")}>
+              <span className={cn("text-xs font-medium leading-snug", safetyAcknowledged ? "text-text" : "text-red")}>
                 I&apos;ve reviewed this safety flag and am proceeding with my own judgment
               </span>
             </label>
           ) : (
-            <p className="text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">{clientInput.name}</span> ·{" "}
-              <span className="text-warning">Awaiting approval</span>
+            <p className="flex items-center gap-2 text-[13px]">
+              <span className="font-semibold text-text">{clientInput.name}</span>
+              <span className="text-muted-2">·</span>
+              <span className="flex items-center gap-1.5 text-amber">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber" />Awaiting approval
+              </span>
             </p>
           )}
-          <div className="flex items-center gap-2.5">
+          <div className="flex shrink-0 items-center gap-2.5">
             {/* Hidden when AI already proposed macros (fields already visible)
                 or after approval — only needed for the no-proposal case */}
             {!recommendation.proposedMacros && !approved && (
@@ -809,17 +822,15 @@ function AnalysisPanel({
                   }
                 }}
                 className={cn(
-                  "inline-flex h-11 items-center gap-2 rounded-lg border px-5 text-sm font-semibold",
-                  "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                  manualEditOpen
-                    ? "border-border bg-surface-3 text-secondary hover:bg-surface-3 hover:text-foreground"
-                    : "border-border bg-surface-2 text-foreground hover:border-border-strong hover:bg-surface-3"
+                  "inline-flex h-11 items-center gap-2 rounded-[11px] border border-hair-2 bg-surface-3 px-4 text-[13.5px] font-bold text-[#C7CDD6]",
+                  "transition-colors hover:text-white",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring"
                 )}
               >
                 {manualEditOpen ? (
                   <><XCircle className="h-4 w-4" strokeWidth={2} />Cancel</>
                 ) : (
-                  <><Pencil className="h-4 w-4" strokeWidth={2} />Edit Plan Manually</>
+                  <><Pencil className="h-4 w-4" strokeWidth={2} />Edit plan manually</>
                 )}
               </button>
             )}
@@ -828,13 +839,12 @@ function AnalysisPanel({
               onClick={() => onApprove(editedMacros, editedMessage.trim())}
               disabled={approving || approved || (isReview && !safetyAcknowledged) || !macrosValid || !messageValid || (macroWarnings.length > 0 && !macroWarningsAcknowledged)}
               className={cn(
-                "inline-flex h-11 items-center gap-2 rounded-lg px-6 text-sm font-semibold",
-                "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                "inline-flex h-11 items-center gap-2 rounded-[11px] px-5 text-[13.5px] font-bold text-white",
+                "transition-[filter,background-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring",
+                "disabled:cursor-not-allowed disabled:opacity-60",
                 approved
-                  ? "bg-success text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12),0_2px_10px_-2px_rgba(52,211,153,0.4)]"
-                  : isReview && !safetyAcknowledged
-                  ? "cursor-not-allowed bg-muted text-muted-foreground"
-                  : "bg-accent text-accent-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.10),0_2px_10px_-2px_rgba(77,124,254,0.45)] hover:bg-accent-hover active:bg-accent-press"
+                  ? "bg-green shadow-[0_10px_26px_-12px_color-mix(in_oklab,var(--green)_90%,transparent)]"
+                  : "bg-accent shadow-[0_10px_26px_-12px_color-mix(in_oklab,var(--accent)_90%,transparent)] hover:brightness-110"
               )}
             >
               {approving ? (
@@ -842,7 +852,7 @@ function AnalysisPanel({
               ) : approved ? (
                 <><CheckCircle2 className="h-4 w-4" />Approved</>
               ) : (
-                <><Send className="h-4 w-4" strokeWidth={2} />Approve Plan</>
+                <><Send className="h-4 w-4" strokeWidth={2} />Approve plan</>
               )}
             </button>
           </div>
@@ -864,19 +874,19 @@ function ApprovedPanel({
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Client context bar */}
-      <div className="shrink-0 border-b border-border bg-card px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-[15px] font-bold text-accent">
+      <div className="shrink-0 border-b border-hair bg-sidebar px-8 py-5">
+        <div className="flex items-center gap-3.5">
+          <div className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_oklab,var(--accent)_20%,#14161B)] text-[15px] font-bold text-accent-lite">
             {client.initials}
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-display text-lg font-semibold tracking-tight text-foreground">{client.name}</h1>
-              <span className="rounded-full border border-success/30 bg-success-muted px-2 py-0.5 text-[10px] font-semibold text-success">
-                Approved
+            <div className="flex items-center gap-2.5">
+              <h1 className="font-display text-[19px] font-extrabold tracking-[-0.01em] text-text">{client.name}</h1>
+              <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-[color-mix(in_oklab,var(--green)_28%,transparent)] bg-[color-mix(in_oklab,var(--green)_14%,transparent)] px-2.5 py-1 text-[11px] font-bold text-green">
+                <span className="h-1.5 w-1.5 rounded-full bg-green" />Approved
               </span>
             </div>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="mt-0.5 text-[13px] text-muted-1">
               Check-in from {savedAnalysis.approvedAt}
             </p>
           </div>
@@ -884,13 +894,13 @@ function ApprovedPanel({
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-4xl space-y-6 px-6 py-6 xl:px-8">
+      <div className="flex-1 overflow-y-auto bg-bg">
+        <div className="mx-auto max-w-[900px] space-y-4 px-8 py-7">
 
           {/* Read-only notice */}
-          <div className="flex items-center gap-3 rounded-lg border border-success/25 bg-success-muted/30 px-4 py-3">
-            <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
-            <p className="text-xs font-medium text-success">
+          <div className="flex items-center gap-3 rounded-xl border border-[color-mix(in_oklab,var(--green)_22%,transparent)] bg-[color-mix(in_oklab,var(--green)_8%,transparent)] px-4 py-3.5">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-green" />
+            <p className="text-xs font-semibold text-green">
               This check-in has been approved. Showing the analysis saved at approval — no new AI call has been made.
             </p>
           </div>
@@ -900,11 +910,11 @@ function ApprovedPanel({
             const flag = attentionFlag(savedAnalysis.attention);
             if (!flag) return null;
             return (
-              <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning-muted/40 p-3">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+              <div className="flex items-start gap-3 rounded-[13px] border border-[color-mix(in_oklab,var(--amber)_26%,transparent)] bg-[color-mix(in_oklab,var(--amber)_8%,transparent)] p-4">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber" />
                 <div>
-                  <p className="text-sm font-semibold text-foreground">{flag.title}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{flag.detail}</p>
+                  <p className="text-sm font-bold text-text">{flag.title}</p>
+                  <p className="mt-0.5 text-xs text-muted-1">{flag.detail}</p>
                 </div>
               </div>
             );
@@ -915,39 +925,37 @@ function ApprovedPanel({
 
           {/* Saved AI synthesis */}
           <section>
-            <div className="overflow-hidden rounded-xl border border-border bg-surface-2 shadow-sm">
-              <div className="h-0.5 bg-gradient-to-r from-accent to-accent/0" aria-hidden />
-              <div className="flex items-center gap-3 border-b border-border px-5 py-3.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-soft ring-1 ring-inset ring-accent/25">
-                  <Bot className="h-4 w-4 text-accent" strokeWidth={2} />
+            <div className="overflow-hidden rounded-2xl border border-hair bg-surface p-[22px] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+              <div className="mb-3.5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] bg-[color-mix(in_oklab,var(--accent)_18%,transparent)] text-accent-lite">
+                    <Bot className="h-[17px] w-[17px]" strokeWidth={1.9} />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-text">AI Synthesis</h2>
+                    <p className="text-[11.5px] text-muted-1">{client.name} · saved at approval</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-foreground">AI Synthesis</h2>
-                  <p className="text-[11px] text-muted-foreground">{client.name} · saved at approval</p>
-                </div>
-                <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-success/30 bg-success-muted px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-success">
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-[color-mix(in_oklab,var(--green)_28%,transparent)] bg-[color-mix(in_oklab,var(--green)_14%,transparent)] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-green">
                   <CheckCircle2 className="h-3 w-3" />Approved
                 </span>
               </div>
-              <div className="px-5 py-5">
-                {savedAnalysis.coachSummary ? (
-                  <p className="text-[15px] leading-7 text-foreground/90">{savedAnalysis.coachSummary}</p>
-                ) : (
-                  <p className="text-sm italic text-muted-foreground">No coach summary was saved.</p>
-                )}
-              </div>
+              {savedAnalysis.coachSummary ? (
+                <p className="text-[14.5px] leading-[1.7] text-text/90">{savedAnalysis.coachSummary}</p>
+              ) : (
+                <p className="text-sm italic text-muted-2">No coach summary was saved.</p>
+              )}
             </div>
           </section>
 
           {/* Saved client message */}
           {savedAnalysis.clientMessage && (
             <section>
-              <div className="rounded-xl border border-border bg-card shadow-sm">
-                <div className="flex items-center gap-2 border-b border-border px-5 py-3.5">
-                  <MessageSquare className="h-4 w-4 text-muted-foreground" strokeWidth={2} />
-                  <h2 className="text-sm font-semibold text-foreground">Client message sent</h2>
+              <div className="rounded-2xl border border-hair bg-surface p-[22px] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                <div className="mb-3 flex items-center gap-2 text-sm font-bold text-text">
+                  <MessageSquare className="h-4 w-4 text-muted-2" strokeWidth={2} />Client message sent
                 </div>
-                <p className="whitespace-pre-wrap px-5 py-4 text-sm leading-relaxed text-foreground/90">
+                <p className="whitespace-pre-wrap text-[13.5px] leading-[1.6] text-text/85">
                   {savedAnalysis.clientMessage}
                 </p>
               </div>
@@ -956,35 +964,33 @@ function ApprovedPanel({
 
           {/* Macro targets */}
           <section>
-            <div className="rounded-xl border border-border bg-card shadow-sm">
-              <div className="flex items-center gap-2 border-b border-border px-5 py-3.5">
-                <Target className="h-4 w-4 text-muted-foreground" strokeWidth={2} />
-                <h2 className="text-sm font-semibold text-foreground">Macro targets at approval</h2>
+            <div className="rounded-2xl border border-hair bg-surface p-[22px] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+              <div className="mb-4 flex items-center gap-2 text-sm font-bold text-text">
+                <Target className="h-4 w-4 text-muted-2" strokeWidth={2} />Macro targets at approval
               </div>
-              <div className="grid grid-cols-3 gap-4 px-5 py-5">
+              <div className="grid grid-cols-3 gap-3">
                 {[
                   { label: 'Protein', value: savedAnalysis.macros.protein, color: 'text-macro-protein' },
                   { label: 'Carbs',   value: savedAnalysis.macros.carbs,   color: 'text-macro-carbs' },
                   { label: 'Fats',    value: savedAnalysis.macros.fats,    color: 'text-macro-fats' },
                 ].map(({ label, value, color }) => (
-                  <div key={label} className="rounded-lg bg-muted/40 p-3 text-center">
-                    <p className={cn('mb-1 text-[10px] font-semibold', color)}>{label}</p>
-                    <p className="font-mono text-2xl font-bold tabular-nums text-foreground">{value}</p>
-                    <p className="text-[10px] text-muted-foreground">g / day</p>
+                  <div key={label} className="rounded-xl border border-hair bg-surface-deep p-3.5 text-center">
+                    <p className={cn('mb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em]', color)}>{label}</p>
+                    <p className="font-mono text-[26px] font-medium tabular-nums text-text">{value}</p>
+                    <p className="text-[10px] text-muted-2">g / day</p>
                   </div>
                 ))}
               </div>
             </div>
           </section>
 
-          <div className="h-2" />
         </div>
       </div>
 
       {/* Footer — no approve button */}
-      <div className="shrink-0 border-t border-border bg-card/95 px-6 py-4 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-4xl items-center xl:px-2">
-          <p className="flex items-center gap-1.5 text-xs font-medium text-success">
+      <div className="shrink-0 border-t border-hair bg-sidebar px-8 py-4">
+        <div className="mx-auto flex max-w-[900px] items-center">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-green">
             <CheckCircle2 className="h-4 w-4" />
             Plan approved and saved · {savedAnalysis.approvedAt}
           </p>
@@ -997,23 +1003,23 @@ function ApprovedPanel({
 function ApprovedFallbackPanel({ client }: { client: QueueClientData }) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-border bg-card px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-[15px] font-bold text-accent">
+      <div className="shrink-0 border-b border-hair bg-sidebar px-8 py-5">
+        <div className="flex items-center gap-3.5">
+          <div className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_oklab,var(--accent)_20%,#14161B)] text-[15px] font-bold text-accent-lite">
             {client.initials}
           </div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-base font-semibold text-foreground">{client.name}</h1>
-            <span className="rounded-full border border-success/30 bg-success-muted px-2 py-0.5 text-[10px] font-semibold text-success">
-              Approved
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-[17px] font-bold text-text">{client.name}</h1>
+            <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-[color-mix(in_oklab,var(--green)_28%,transparent)] bg-[color-mix(in_oklab,var(--green)_14%,transparent)] px-2.5 py-1 text-[11px] font-bold text-green">
+              <span className="h-1.5 w-1.5 rounded-full bg-green" />Approved
             </span>
           </div>
         </div>
       </div>
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8 text-center">
-        <CheckCircle2 className="h-8 w-8 text-success/40" />
-        <p className="text-sm font-semibold text-muted-foreground">Check-in approved</p>
-        <p className="max-w-sm text-xs text-muted-foreground">
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-bg px-8 text-center">
+        <CheckCircle2 className="h-8 w-8 text-[color-mix(in_oklab,var(--green)_45%,transparent)]" />
+        <p className="text-sm font-bold text-muted-1">Check-in approved</p>
+        <p className="max-w-sm text-xs text-muted-2">
           This check-in was approved but the saved analysis could not be loaded.
         </p>
       </div>
@@ -1144,7 +1150,7 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
   const selectedClient = localQueue.find((c) => c.id === selectedId) ?? null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-bg">
       <Sidebar />
 
       <div className="flex min-w-0 flex-1 overflow-hidden">

@@ -3,14 +3,14 @@
 import { Suspense, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 const inputBase =
-  "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground " +
-  "placeholder:text-muted-foreground/50 transition-colors " +
-  "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent " +
+  "w-full rounded-xl border border-hair-2 bg-bg px-3.5 py-3 text-sm text-text " +
+  "placeholder:text-muted-3 transition-colors " +
+  "focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-ring " +
   "disabled:opacity-50";
 
 function LoginForm() {
@@ -43,11 +43,29 @@ function LoginForm() {
   }
 
   return (
-    <main className="min-h-screen bg-bg flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
+    <main
+      className="relative flex min-h-screen items-center justify-center overflow-hidden p-6"
+      style={{
+        background:
+          "radial-gradient(1100px 620px at 72% -12%, color-mix(in oklab, var(--accent) 18%, transparent), transparent 60%), radial-gradient(900px 600px at 12% 112%, color-mix(in oklab, var(--accent) 10%, transparent), transparent 55%), var(--bg)",
+      }}
+    >
+      {/* Faint grid overlay, masked to a soft center glow (decorative). */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px)",
+          backgroundSize: "52px 52px",
+          maskImage: "radial-gradient(700px 500px at 50% 35%, #000, transparent 80%)",
+          WebkitMaskImage: "radial-gradient(700px 500px at 50% 35%, #000, transparent 80%)",
+        }}
+      />
 
+      <div className="relative w-full max-w-[420px]">
         {/* Brand */}
-        <div className="mb-8 text-center">
+        <div className="mb-7 flex justify-center">
           <Image
             src="/brand/vimafy-lockup-dark.svg"
             alt="Vimafy"
@@ -55,30 +73,26 @@ function LoginForm() {
             height={128}
             priority
             unoptimized
-            className="mx-auto mb-3 h-10 w-auto"
+            className="h-11 w-auto"
           />
-          <p className="text-sm text-secondary">Sign in to your dashboard</p>
         </div>
 
         {/* No-account banner (bounced here by verifyCoachSession after we
             cleared a session whose auth user has no Coach row). */}
         {noAccount && (
-          <div className="mb-4 rounded-lg border border-warning/30 bg-warning-muted px-3 py-2.5 text-sm text-warning">
+          <div className="mb-4 rounded-lg border border-[color-mix(in_oklab,var(--amber)_30%,transparent)] bg-[color-mix(in_oklab,var(--amber)_12%,transparent)] px-3 py-2.5 text-sm text-amber">
             This account isn&apos;t fully set up yet — please contact your administrator.
           </div>
         )}
 
         {/* Form card */}
-        <div
-          className="bg-surface-2 border border-border-strong rounded-2xl p-6"
-          style={{ boxShadow: "var(--shadow-card)" }}
-        >
+        <div className="rounded-[20px] border border-hair-2 bg-gradient-to-b from-surface to-surface-deep p-8 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.75),inset_0_1px_0_rgba(255,255,255,0.04)]">
+          <h1 className="font-display text-[21px] font-bold tracking-[-0.01em] text-text">Welcome back</h1>
+          <p className="mb-6 mt-1.5 text-sm text-muted-1">Sign in to your coaching dashboard.</p>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label
-                htmlFor="email"
-                className="block mb-1.5 text-sm font-medium text-foreground"
-              >
+              <label htmlFor="email" className="mb-2 block text-xs font-semibold text-muted-1">
                 Email
               </label>
               <input
@@ -87,16 +101,13 @@ function LoginForm() {
                 type="email"
                 autoComplete="email"
                 required
-                placeholder="you@example.com"
+                placeholder="you@studio.com"
                 className={inputBase}
               />
             </div>
 
             <div>
-              <label
-                htmlFor="password"
-                className="block mb-1.5 text-sm font-medium text-foreground"
-              >
+              <label htmlFor="password" className="mb-2 block text-xs font-semibold text-muted-1">
                 Password
               </label>
               <input
@@ -106,12 +117,12 @@ function LoginForm() {
                 autoComplete="current-password"
                 required
                 placeholder="••••••••"
-                className={inputBase}
+                className={cn(inputBase, "font-mono tracking-[0.08em]")}
               />
             </div>
 
             {error && (
-              <p className="text-sm text-status-red bg-status-red-soft rounded-lg px-3 py-2">
+              <p className="rounded-lg border border-[color-mix(in_oklab,var(--red)_30%,transparent)] bg-[color-mix(in_oklab,var(--red)_12%,transparent)] px-3 py-2.5 text-sm text-red">
                 {error}
               </p>
             )}
@@ -120,18 +131,28 @@ function LoginForm() {
               type="submit"
               disabled={isPending}
               className={cn(
-                "w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2.5",
-                "bg-accent text-accent-foreground text-sm font-semibold",
-                "hover:opacity-90 active:opacity-80 transition-opacity",
-                "disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                "mt-2 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5",
+                "bg-accent text-[15px] font-bold text-accent-foreground",
+                "shadow-[0_12px_30px_-12px_color-mix(in_oklab,var(--accent)_90%,transparent)]",
+                "transition hover:brightness-110 active:translate-y-px",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                "disabled:cursor-not-allowed disabled:opacity-60"
               )}
             >
-              {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-              {isPending ? "Signing in…" : "Sign in"}
+              {isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Signing in…
+                </>
+              ) : (
+                <>
+                  Sign in
+                  <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+                </>
+              )}
             </button>
           </form>
         </div>
-
       </div>
     </main>
   );
