@@ -8,7 +8,7 @@ export default function TriageLoading() {
     <div
       role="status"
       aria-label="Loading triage board"
-      className="mx-auto max-w-4xl px-6 py-8 lg:px-8"
+      className="mx-auto max-w-[1080px] px-6 py-8 lg:px-8"
     >
           <span className="sr-only">Loading triage board…</span>
 
@@ -26,7 +26,7 @@ export default function TriageLoading() {
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="flex items-center gap-4 overflow-hidden rounded-xl border border-hair bg-surface p-4"
+                className="flex items-center gap-4 overflow-hidden rounded-[14px] border border-hair bg-surface p-4"
               >
                 <Skeleton className="h-10 w-1 shrink-0 rounded-full" />
                 <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
