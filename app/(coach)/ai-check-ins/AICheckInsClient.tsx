@@ -147,6 +147,30 @@ function fmtRate(rate: number | null): string {
   return `${sign}${rate.toFixed(2)}%/wk`;
 }
 
+// Compact queue timestamp. The list is sorted oldest-first by FULL timestamp,
+// but showing only the clock time makes multi-day check-ins look out of order
+// (an 18:06 from two days ago sits above a 14:42 from today). So every row gets
+// an explicit day label: "Today 14:42", "Yesterday 18:06", "17 Jul 18:06".
+// `mounted` gates the relative-day math to the client, so the server render and
+// first paint stay time-only and there is no hydration mismatch on the labels.
+function formatCheckinTime(iso: string, mounted: boolean): string {
+  const d = new Date(iso);
+  const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  if (!mounted) return time;
+  const now = new Date();
+  const startOfDay = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const dayDiff = Math.round((startOfDay(now) - startOfDay(d)) / 86_400_000);
+  if (dayDiff <= 0) return `Today ${time}`;      // today (or clock skew)
+  if (dayDiff === 1) return `Yesterday ${time}`;
+  const datePart = d.toLocaleDateString(
+    "en-GB",
+    d.getFullYear() === now.getFullYear()
+      ? { day: "numeric", month: "short" }
+      : { day: "numeric", month: "short", year: "numeric" },
+  );
+  return `${datePart} ${time}`;                  // e.g. "17 Jul 18:06"
+}
+
 // Contextual do/don't guidance for each engine action
 const ACTION_GUIDANCE: Record<string, { dont: string[]; do: string[] }> = {
   adjust_macros:     { dont: ["Ignore this trend — the engine has detected a genuine plateau"], do: ["Review and approve the proposed macro adjustment", "Monitor trend for 2 weeks before adjusting again"] },
@@ -229,6 +253,11 @@ function LeftPanel({ clients, selectedId, onSelect }: {
 }) {
   const pending = clients.filter((c) => c.status === CHECK_IN_STATUS.Pending).length;
 
+  // Relative-day labels ("Today"/"Yesterday") depend on the current time, so
+  // enrich them only after mount — SSR and first paint stay time-only.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   function queueFlag(status: CheckInStatus | 'none'): { label: string; color: FlagColor } {
     if (status === CHECK_IN_STATUS.Approved) return { label: "Approved",       color: "success" };
     if (status === CHECK_IN_STATUS.Pending)  return { label: "Pending Review", color: "warning" };
@@ -297,9 +326,9 @@ function LeftPanel({ clients, selectedId, onSelect }: {
                         {client.name}
                       </span>
                       {client.submittedAt && (
-                        <span className="flex shrink-0 items-center gap-1 font-mono text-[11px] tabular-nums text-muted-2">
+                        <span className="flex shrink-0 items-center gap-1 whitespace-nowrap font-mono text-[11px] tabular-nums text-muted-2">
                           <Clock className="h-2.5 w-2.5" />
-                          {new Date(client.submittedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                          {formatCheckinTime(client.submittedAt, mounted)}
                         </span>
                       )}
                     </div>
