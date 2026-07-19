@@ -32,12 +32,21 @@ export default async function DashboardPage() {
     include: { checkIns: { orderBy: { date: "asc" } } },
   });
 
-  // ── 2. Triage — same algorithm as app/triage/page.tsx ────────────────────
+  // ── 2. Triage — same algorithm as app/triage/page.tsx, with one known gap:
+  // that page also nudges triage to yellow off a cached AI attention flag, which
+  // is not replicated here, so a flagged client can read yellow there and
+  // on-track here. Closing it means sharing one classifier between the two.
+  //                                                                    ────────
   const attentionClients: AttentionClient[] = [];
   let onTrackCount = 0;
+  // Clients the engine has no verdict on yet. Kept separate from onTrackCount:
+  // "grey" means not enough data (see Triage in lib/coach-engine), which is not
+  // the same claim as "on track with no flags". Folding the two together made
+  // this page contradict the Triage board, which files them under "No Data".
+  let noDataCount = 0;
 
   for (const c of clients) {
-    if (!c.checkIns.length) { onTrackCount++; continue; }
+    if (!c.checkIns.length) { noDataCount++; continue; }
 
     const latest = c.checkIns[c.checkIns.length - 1];
     const days = daysSince(new Date(latest.date));
@@ -71,6 +80,8 @@ export default async function DashboardPage() {
         headline: synthesis.recommendation.headline,
         daysSinceLastCheckIn: days,
       });
+    } else if (synthesis.triage === "grey") {
+      noDataCount++;
     } else {
       onTrackCount++;
     }
@@ -150,6 +161,7 @@ export default async function DashboardPage() {
     totalClients: clients.length,
     attentionClients,
     onTrackCount,
+    noDataCount,
     macroCompliancePct,
     recentCheckIns,
     checkInBars,
