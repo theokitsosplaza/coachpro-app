@@ -14,7 +14,7 @@ export default function AiCheckInsLoading() {
 
       <div className="flex min-w-0 flex-1 overflow-hidden">
         {/* Queue column */}
-        <aside className="flex w-80 shrink-0 flex-col border-r border-hair bg-surface xl:w-96">
+        <aside className="flex w-[334px] shrink-0 flex-col border-r border-hair bg-sidebar max-[860px]:w-full">
           <div className="border-b border-hair px-5 py-4">
             <Skeleton className="h-4 w-32" />
             <Skeleton className="mt-2 h-3 w-20" />
@@ -34,7 +34,7 @@ export default function AiCheckInsLoading() {
         </aside>
 
         {/* Right analysis panel */}
-        <div className="min-w-0 flex-1 overflow-hidden p-8">
+        <div className="min-w-0 flex-1 overflow-hidden p-8 max-[860px]:hidden">
           <div className="mx-auto max-w-2xl">
             <Skeleton className="h-6 w-56 max-w-full" />
             <Skeleton className="mt-3 h-3 w-40" />
