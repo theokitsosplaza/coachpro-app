@@ -1085,6 +1085,14 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
   }, [selectedId, localQueue]);
 
   const handleSelect = (id: string) => {
+    // Already open — nothing to reset or refetch. Without this guard the resets
+    // below still run, but the fetch effect (keyed on selectedId + localQueue)
+    // sees no changed dep and never re-runs, leaving loading=true with no
+    // request in flight — a spinner that never resolves. Matters because the
+    // first queue row is auto-selected on mount, so clicking it to "open" it
+    // hits exactly this case.
+    if (id === selectedId) return;
+
     setSelectedId(id);
     window.history.replaceState(null, '', `?clientId=${encodeURIComponent(id)}`);
     const client = localQueue.find((c) => c.id === id);
