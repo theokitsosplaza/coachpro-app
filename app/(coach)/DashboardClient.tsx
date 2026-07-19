@@ -26,6 +26,8 @@ export type DashboardData = {
   totalClients: number;
   attentionClients: AttentionClient[];
   onTrackCount: number;
+  /** Engine has no verdict yet (no check-ins, or too few for a trend). */
+  noDataCount: number;
   macroCompliancePct: number | null;
   recentCheckIns: {
     checkInId: string;
@@ -176,7 +178,7 @@ const PANEL_TITLE = "text-[11px] font-semibold uppercase tracking-[0.1em] text-[
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function DashboardClient({ data }: { data: DashboardData }) {
-  const { coachName, totalClients, attentionClients, onTrackCount, macroCompliancePct, recentCheckIns, checkInBars } = data;
+  const { coachName, totalClients, attentionClients, onTrackCount, noDataCount, macroCompliancePct, recentCheckIns, checkInBars } = data;
 
   const triageItems         = attentionClients.map(toTriageItem);
   const redCount            = attentionClients.filter((c) => c.triage === "red").length;
@@ -274,6 +276,9 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                 <CheckCircle2 className="h-[17px] w-[17px] shrink-0 text-green" strokeWidth={2} />
                 <span className="text-[13.5px] text-muted-1">
                   <b className="font-bold text-text">{onTrackCount} client{onTrackCount !== 1 ? "s" : ""}</b> fully on track with no flags.
+                  {noDataCount > 0 && (
+                    <> · <b className="font-bold text-text">{noDataCount}</b> awaiting data</>
+                  )}
                 </span>
               </div>
 
