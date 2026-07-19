@@ -250,7 +250,7 @@ export default async function ClientProfilePage({
         className="mb-5 inline-flex items-center gap-2 rounded text-[13px] font-semibold text-muted-1 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring"
       >
         <ChevronLeft className="h-4 w-4" strokeWidth={2.1} />
-        Back to Master Roster
+        Back to Clients
       </Link>
 
       {/* Archived banner */}
