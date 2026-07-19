@@ -14,15 +14,15 @@ export default function SettingsLoading() {
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Header bar */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-hair bg-surface px-6">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-hair px-6">
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-3 w-28" />
         </header>
 
         <div className="flex min-h-0 flex-1 overflow-hidden">
           {/* Tab nav */}
-          <nav className="flex w-52 shrink-0 flex-col gap-1 border-r border-hair bg-surface px-2 pt-4">
-            {Array.from({ length: 5 }).map((_, i) => (
+          <nav className="flex w-56 shrink-0 flex-col gap-1 border-r border-hair bg-surface px-2 pt-4">
+            {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 px-3 py-2.5">
                 <Skeleton className="h-4 w-4 shrink-0" />
                 <Skeleton className="h-3.5 w-24" />
