@@ -31,7 +31,7 @@ export default function ClientsLoading() {
             key={i}
             className="flex items-center gap-4 border-b border-hair px-5 py-4 last:border-b-0"
           >
-            <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+            <Skeleton className="h-10 w-10 shrink-0 rounded-xl" />
             <div className="min-w-0 flex-1">
               <Skeleton className="h-4 w-44 max-w-full" />
               <Skeleton className="mt-2 h-3 w-32" />

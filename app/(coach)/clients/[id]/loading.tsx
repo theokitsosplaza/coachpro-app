@@ -16,9 +16,9 @@ export default function ClientProfileLoading() {
       <Skeleton className="mb-6 h-3 w-40" />
 
       {/* Header card */}
-      <div className="mb-6 rounded-xl border border-hair bg-surface p-6">
+      <div className="mb-6 rounded-2xl border border-hair bg-surface p-6">
         <div className="flex items-start gap-4">
-          <Skeleton className="h-14 w-14 shrink-0 rounded-full" />
+          <Skeleton className="h-14 w-14 shrink-0 rounded-[14px]" />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <Skeleton className="h-7 w-52 max-w-full" />
@@ -36,7 +36,7 @@ export default function ClientProfileLoading() {
       {/* Two-column: targets + analysis */}
       <div className="mb-6 grid gap-6 md:grid-cols-2">
         {/* Current targets */}
-        <div className="rounded-xl border border-hair bg-surface p-5">
+        <div className="rounded-2xl border border-hair bg-surface p-5">
           <Skeleton className="h-3 w-28" />
           <div className="mt-4 grid grid-cols-3 gap-3">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -53,7 +53,7 @@ export default function ClientProfileLoading() {
         </div>
 
         {/* Latest analysis */}
-        <div className="rounded-xl border border-hair bg-surface p-5">
+        <div className="rounded-2xl border border-hair bg-surface p-5">
           <Skeleton className="h-3 w-28" />
           <Skeleton className="mt-4 h-4 w-52 max-w-full" />
           <Skeleton className="mt-3 h-3 w-full" />
@@ -66,13 +66,13 @@ export default function ClientProfileLoading() {
       </div>
 
       {/* Weight trend chart */}
-      <div className="mb-6 rounded-xl border border-hair bg-surface p-5">
+      <div className="mb-6 rounded-2xl border border-hair bg-surface p-5">
         <Skeleton className="h-3 w-28" />
         <Skeleton className="mt-3 h-28 w-full rounded-lg" />
       </div>
 
       {/* Check-in history */}
-      <div className="rounded-xl border border-hair bg-surface">
+      <div className="rounded-2xl border border-hair bg-surface">
         <div className="border-b border-hair px-5 py-4">
           <Skeleton className="h-3 w-32" />
         </div>
