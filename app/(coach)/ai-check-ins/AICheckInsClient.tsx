@@ -452,9 +452,12 @@ function NoDataPanel({ name }: { name: string }) {
       </div>
       <div>
         <p className="text-sm font-bold text-text">No check-ins yet</p>
+        {/* One interpolated string rather than {name} followed by JSX text, so
+            there are no adjacent text nodes whose separating space depends on
+            JSX whitespace handling. Defensive only — the rendered output is
+            identical. */}
         <p className="mt-1 max-w-sm text-xs text-muted-2">
-          {name} hasn&apos;t submitted enough check-ins yet for an analysis.
-          The engine needs at least two to read a trend.
+          {`${name} hasn't submitted enough check-ins yet for an analysis. The engine needs at least two to read a trend.`}
         </p>
       </div>
     </div>
