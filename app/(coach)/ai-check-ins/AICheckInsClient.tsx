@@ -144,7 +144,7 @@ function adherenceColor(status: string): FlagColor {
 function fmtRate(rate: number | null): string {
   if (rate === null) return "N/A";
   const sign = rate >= 0 ? "+" : "";
-  return `${sign}${rate.toFixed(2)}%/wk`;
+  return `${sign}${Number(rate.toFixed(2))}%/wk`;
 }
 
 // Compact queue timestamp. The list is sorted oldest-first by FULL timestamp,
