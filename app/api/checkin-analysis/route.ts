@@ -186,6 +186,13 @@ export async function GET(request: Request) {
         status:           latest.status,
         clientReflection: latest.clientReflection,
       },
+      // The immediately-preceding check-in's weight, so the UI can show the
+      // kg change across this one period. The engine consumes the previous
+      // weight to fit its trend line and then discards it — Synthesis exposes
+      // only `weight.latest` — so without this the browser cannot compute a
+      // since-last-check-in delta. Always present: the < 2 check-ins guard
+      // above means `previous` always exists.
+      previousWeight: previous.weight,
       synthesis: responseSynthesis,
       aiOutput,
     });

@@ -71,6 +71,10 @@ type AnalysisResult = {
     status: string;
     clientReflection: string;
   };
+  // Weight from the immediately-preceding check-in. Always sent by the route
+  // (it requires >= 2 check-ins before analysing), and used only for the
+  // one-period kg delta on the weight tile.
+  previousWeight: number;
   synthesis: {
     triage: "red" | "yellow" | "green" | "grey";
     weight: {
@@ -459,7 +463,7 @@ function AnalysisPanel({
   approving: boolean;
   approved: boolean;
 }) {
-  const { clientInput, latestCheckIn, synthesis, aiOutput } = data;
+  const { clientInput, latestCheckIn, previousWeight, synthesis, aiOutput } = data;
   const { recommendation, flags, weight, adherence } = synthesis;
 
   // Editable macro state — pre-filled from AI proposal or current targets on manual open
@@ -487,6 +491,17 @@ function AnalysisPanel({
   // Derive insight stat colours
   const weightColor = weightColorFromFlags(flags);
   const weightDirIcon = weight.direction === "losing" ? TrendingDown : weight.direction === "gaining" ? TrendingUp : Minus;
+
+  // kg change across THIS ONE PERIOD (previous check-in -> latest), labelled
+  // with its period so it can never read as an all-time figure. Deliberately
+  // kg-only: the tile's value is already a percentage (the 28-day %/wk trend),
+  // and a second, differently-derived percentage next to it would invite the
+  // coach to reconcile two figures that answer different questions.
+  // Rounded before the sign is read so a -0.04 kg drift renders "0.0", not "-0.0".
+  const weightDeltaKg = Number((latestCheckIn.weight - previousWeight).toFixed(1));
+  const weightDeltaLabel =
+    `${weightDeltaKg > 0 ? "+" : weightDeltaKg < 0 ? "-" : ""}` +
+    `${Math.abs(weightDeltaKg).toFixed(1)} kg since last check-in`;
   const guidance = ACTION_GUIDANCE[recommendation.action] ?? ACTION_GUIDANCE["hold"];
   const isReview = recommendation.action === "review";
 
@@ -563,7 +578,7 @@ function AnalysisPanel({
             <InsightStat
               label="Weight trend"
               value={fmtRate(weight.ratePerWeekPct)}
-              delta={weight.latest ? `Latest: ${weight.latest} kg` : undefined}
+              delta={weightDeltaLabel}
               color={weightColor}
               icon={weightDirIcon}
             />
