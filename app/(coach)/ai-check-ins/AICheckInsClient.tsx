@@ -226,7 +226,10 @@ function FlagBadge({ label, color }: { label: string; color: FlagColor }) {
 }
 
 function InsightStat({ label, value, delta, color, icon: Icon }: {
-  label: string; value: string; delta?: string; color: FlagColor; icon: typeof Scale;
+  // `delta` is a ReactNode so a tile can stack more than one sub-line (the
+  // weight tile carries both the current weight and the change). The other
+  // three tiles pass a plain string and render exactly as before.
+  label: string; value: string; delta?: React.ReactNode; color: FlagColor; icon: typeof Scale;
 }) {
   const valueText: Record<FlagColor, string> = {
     danger: "text-red", warning: "text-amber", success: "text-green", neutral: "text-text",
@@ -502,6 +505,11 @@ function AnalysisPanel({
   const weightDeltaLabel =
     `${weightDeltaKg > 0 ? "+" : weightDeltaKg < 0 ? "-" : ""}` +
     `${Math.abs(weightDeltaKg).toFixed(1)} kg since last check-in`;
+
+  // Absolute anchor for the tile. Rounded through Number() so a stored float
+  // artefact cannot surface as "69.69999999 kg", and so a whole number stays
+  // whole ("80 kg now", not "80.0 kg now").
+  const weightNowLabel = `${Number(latestCheckIn.weight.toFixed(1))} kg now`;
   const guidance = ACTION_GUIDANCE[recommendation.action] ?? ACTION_GUIDANCE["hold"];
   const isReview = recommendation.action === "review";
 
@@ -578,7 +586,12 @@ function AnalysisPanel({
             <InsightStat
               label="Weight trend"
               value={fmtRate(weight.ratePerWeekPct)}
-              delta={weightDeltaLabel}
+              delta={
+                <>
+                  <span className="block">{weightNowLabel}</span>
+                  <span className="block">{weightDeltaLabel}</span>
+                </>
+              }
               color={weightColor}
               icon={weightDirIcon}
             />
