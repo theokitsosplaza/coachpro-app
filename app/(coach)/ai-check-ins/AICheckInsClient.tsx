@@ -240,7 +240,13 @@ function InsightStat({ label, value, delta, color, icon: Icon }: {
         <Icon className="h-3.5 w-3.5" />{label}
       </div>
       <p className={cn("mt-3.5 font-mono text-[26px] font-medium tabular-nums tracking-[-0.02em]", valueText[color])}>{value}</p>
-      {delta && <p className="mt-1.5 text-[11.5px] text-muted-2">{delta}</p>}
+      {/* Sub-label. Held at font-medium (500) — the same weight as the value
+          above — so it can never out-weigh the number it explains. Legibility
+          comes from contrast, not weight: muted-1 is 9.16:1 on this surface vs
+          muted-2's 5.19:1, which passed AA but read faint at 11.5px. Stays a
+          neutral grey on every tile regardless of severity, so only the value
+          carries the colour that says "this is a problem". */}
+      {delta && <p className="mt-1.5 text-[11.5px] font-medium text-muted-1">{delta}</p>}
     </div>
   );
 }
