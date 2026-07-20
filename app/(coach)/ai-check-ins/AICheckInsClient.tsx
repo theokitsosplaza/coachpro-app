@@ -71,6 +71,10 @@ type AnalysisResult = {
     status: string;
     clientReflection: string;
   };
+  // Weight from the immediately-preceding check-in. Always sent by the route
+  // (it requires >= 2 check-ins before analysing), and used only for the
+  // one-period kg delta on the weight tile.
+  previousWeight: number;
   synthesis: {
     triage: "red" | "yellow" | "green" | "grey";
     weight: {
@@ -130,9 +134,37 @@ function fatigueColor(score: number): FlagColor {
   return "danger";
 }
 
-function triageColor(t: string): FlagColor {
-  const m: Record<string, FlagColor> = { red: "danger", yellow: "warning", green: "success", grey: "neutral" };
-  return m[t] ?? "neutral";
+// Flag codes the engine mints from the WEIGHT trend specifically. Keep in sync
+// with lib/coach-engine.ts. CYCLE_AFFECTED is deliberately excluded: it is
+// severity 'info' and means "the scale is unreadable this week, hold" — not a
+// weight problem to colour for.
+const WEIGHT_FLAG_CODES = new Set([
+  "SAFETY_RAPID_LOSS",
+  "PLATEAU_GOOD_ADHERENCE",
+  "STALL_OVEREATING",
+  "STALL_UNDEREATING",
+  "GAIN_TOO_FAST",
+  "GAIN_STALLED",
+  "NOGAIN_UNDEREATING",
+  "NOGAIN_OVEREATING",
+  "MAINTENANCE_DRIFT",
+]);
+
+// Severity colour for the weight tile, derived ONLY from weight-related flags.
+//
+// This previously took the whole-client triage, which misattributed in both
+// directions: a client flagged red for SLEEP rendered a red WEIGHT tile (the
+// coach's eye lands on the wrong metric), and a green client rendered a green
+// weight tile even though nothing had actually verified the trend.
+//
+// Absence of a flag is not evidence of a good trend, so neutral is the FLOOR:
+// this never returns "success". The tile stays neutral and only escalates when
+// a weight flag genuinely fires.
+function weightColorFromFlags(flags: Array<{ code: string; severity: string }>): FlagColor {
+  const weightFlags = flags.filter((f) => WEIGHT_FLAG_CODES.has(f.code));
+  if (weightFlags.some((f) => f.severity === "safety")) return "danger";
+  if (weightFlags.some((f) => f.severity === "warning")) return "warning";
+  return "neutral";
 }
 
 function adherenceColor(status: string): FlagColor {
@@ -194,7 +226,10 @@ function FlagBadge({ label, color }: { label: string; color: FlagColor }) {
 }
 
 function InsightStat({ label, value, delta, color, icon: Icon }: {
-  label: string; value: string; delta?: string; color: FlagColor; icon: typeof Scale;
+  // `delta` is a ReactNode so a tile can stack more than one sub-line (the
+  // weight tile carries both the current weight and the change). The other
+  // three tiles pass a plain string and render exactly as before.
+  label: string; value: string; delta?: React.ReactNode; color: FlagColor; icon: typeof Scale;
 }) {
   const valueText: Record<FlagColor, string> = {
     danger: "text-red", warning: "text-amber", success: "text-green", neutral: "text-text",
@@ -205,7 +240,13 @@ function InsightStat({ label, value, delta, color, icon: Icon }: {
         <Icon className="h-3.5 w-3.5" />{label}
       </div>
       <p className={cn("mt-3.5 font-mono text-[26px] font-medium tabular-nums tracking-[-0.02em]", valueText[color])}>{value}</p>
-      {delta && <p className="mt-1.5 text-[11.5px] text-muted-2">{delta}</p>}
+      {/* Sub-label. Held at font-medium (500) — the same weight as the value
+          above — so it can never out-weigh the number it explains. Legibility
+          comes from contrast, not weight: muted-1 is 9.16:1 on this surface vs
+          muted-2's 5.19:1, which passed AA but read faint at 11.5px. Stays a
+          neutral grey on every tile regardless of severity, so only the value
+          carries the colour that says "this is a problem". */}
+      {delta && <p className="mt-1.5 text-[11.5px] font-medium text-muted-1">{delta}</p>}
     </div>
   );
 }
@@ -431,7 +472,7 @@ function AnalysisPanel({
   approving: boolean;
   approved: boolean;
 }) {
-  const { clientInput, latestCheckIn, synthesis, aiOutput } = data;
+  const { clientInput, latestCheckIn, previousWeight, synthesis, aiOutput } = data;
   const { recommendation, flags, weight, adherence } = synthesis;
 
   // Editable macro state — pre-filled from AI proposal or current targets on manual open
@@ -457,8 +498,24 @@ function AnalysisPanel({
   const macroWarnings = computeMacroWarnings(editedMacros);
 
   // Derive insight stat colours
-  const weightColor = triageColor(synthesis.triage);
+  const weightColor = weightColorFromFlags(flags);
   const weightDirIcon = weight.direction === "losing" ? TrendingDown : weight.direction === "gaining" ? TrendingUp : Minus;
+
+  // kg change across THIS ONE PERIOD (previous check-in -> latest), labelled
+  // with its period so it can never read as an all-time figure. Deliberately
+  // kg-only: the tile's value is already a percentage (the 28-day %/wk trend),
+  // and a second, differently-derived percentage next to it would invite the
+  // coach to reconcile two figures that answer different questions.
+  // Rounded before the sign is read so a -0.04 kg drift renders "0.0", not "-0.0".
+  const weightDeltaKg = Number((latestCheckIn.weight - previousWeight).toFixed(1));
+  const weightDeltaLabel =
+    `${weightDeltaKg > 0 ? "+" : weightDeltaKg < 0 ? "-" : ""}` +
+    `${Math.abs(weightDeltaKg).toFixed(1)} kg since last check-in`;
+
+  // Absolute anchor for the tile. Rounded through Number() so a stored float
+  // artefact cannot surface as "69.69999999 kg", and so a whole number stays
+  // whole ("80 kg now", not "80.0 kg now").
+  const weightNowLabel = `${Number(latestCheckIn.weight.toFixed(1))} kg now`;
   const guidance = ACTION_GUIDANCE[recommendation.action] ?? ACTION_GUIDANCE["hold"];
   const isReview = recommendation.action === "review";
 
@@ -535,7 +592,12 @@ function AnalysisPanel({
             <InsightStat
               label="Weight trend"
               value={fmtRate(weight.ratePerWeekPct)}
-              delta={weight.latest ? `Latest: ${weight.latest} kg` : undefined}
+              delta={
+                <>
+                  <span className="block">{weightNowLabel}</span>
+                  <span className="block">{weightDeltaLabel}</span>
+                </>
+              }
               color={weightColor}
               icon={weightDirIcon}
             />
