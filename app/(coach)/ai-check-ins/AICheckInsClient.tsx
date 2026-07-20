@@ -130,9 +130,37 @@ function fatigueColor(score: number): FlagColor {
   return "danger";
 }
 
-function triageColor(t: string): FlagColor {
-  const m: Record<string, FlagColor> = { red: "danger", yellow: "warning", green: "success", grey: "neutral" };
-  return m[t] ?? "neutral";
+// Flag codes the engine mints from the WEIGHT trend specifically. Keep in sync
+// with lib/coach-engine.ts. CYCLE_AFFECTED is deliberately excluded: it is
+// severity 'info' and means "the scale is unreadable this week, hold" — not a
+// weight problem to colour for.
+const WEIGHT_FLAG_CODES = new Set([
+  "SAFETY_RAPID_LOSS",
+  "PLATEAU_GOOD_ADHERENCE",
+  "STALL_OVEREATING",
+  "STALL_UNDEREATING",
+  "GAIN_TOO_FAST",
+  "GAIN_STALLED",
+  "NOGAIN_UNDEREATING",
+  "NOGAIN_OVEREATING",
+  "MAINTENANCE_DRIFT",
+]);
+
+// Severity colour for the weight tile, derived ONLY from weight-related flags.
+//
+// This previously took the whole-client triage, which misattributed in both
+// directions: a client flagged red for SLEEP rendered a red WEIGHT tile (the
+// coach's eye lands on the wrong metric), and a green client rendered a green
+// weight tile even though nothing had actually verified the trend.
+//
+// Absence of a flag is not evidence of a good trend, so neutral is the FLOOR:
+// this never returns "success". The tile stays neutral and only escalates when
+// a weight flag genuinely fires.
+function weightColorFromFlags(flags: Array<{ code: string; severity: string }>): FlagColor {
+  const weightFlags = flags.filter((f) => WEIGHT_FLAG_CODES.has(f.code));
+  if (weightFlags.some((f) => f.severity === "safety")) return "danger";
+  if (weightFlags.some((f) => f.severity === "warning")) return "warning";
+  return "neutral";
 }
 
 function adherenceColor(status: string): FlagColor {
@@ -457,7 +485,7 @@ function AnalysisPanel({
   const macroWarnings = computeMacroWarnings(editedMacros);
 
   // Derive insight stat colours
-  const weightColor = triageColor(synthesis.triage);
+  const weightColor = weightColorFromFlags(flags);
   const weightDirIcon = weight.direction === "losing" ? TrendingDown : weight.direction === "gaining" ? TrendingUp : Minus;
   const guidance = ACTION_GUIDANCE[recommendation.action] ?? ACTION_GUIDANCE["hold"];
   const isReview = recommendation.action === "review";
