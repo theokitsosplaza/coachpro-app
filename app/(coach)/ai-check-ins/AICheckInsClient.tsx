@@ -1185,7 +1185,15 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
     if (client?.status === 'none') return;
 
     let ignore = false;
-    fetch(`/api/checkin-analysis?clientId=${encodeURIComponent(selectedId)}`)
+    // `ignore` still owns every setState decision below — it is the sole guard
+    // and its behaviour is unchanged. The controller only cancels the network
+    // request itself, so switching clients quickly stops leaving orphaned work
+    // (an auth round-trip plus two DB queries per abandoned click) running to
+    // completion server-side.
+    const controller = new AbortController();
+    fetch(`/api/checkin-analysis?clientId=${encodeURIComponent(selectedId)}`, {
+      signal: controller.signal,
+    })
       .then(async (res) => ({ ok: res.ok, json: await res.json() }))
       .then(({ ok, json }) => {
         if (ignore) return;
@@ -1193,13 +1201,16 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
         else setAnalysis(json as AnalysisResult);
       })
       .catch(() => {
+        // An abort rejects this chain, but only ever after cleanup has already
+        // set ignore = true, so the AbortError cannot reach setError. Genuine
+        // network failures on the live request still surface exactly as before.
         if (!ignore) setError("Network error — could not reach the analysis API.");
       })
       .finally(() => {
         if (!ignore) setLoading(false);
       });
 
-    return () => { ignore = true; };
+    return () => { ignore = true; controller.abort(); };
   }, [selectedId, localQueue]);
 
   const handleSelect = (id: string) => {
