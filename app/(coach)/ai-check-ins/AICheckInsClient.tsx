@@ -437,6 +437,30 @@ function EmptyPanel() {
   );
 }
 
+// ── No data yet (client has no check-ins) ─────────────────────────────────────
+
+// A client with no check-ins cannot be analysed — the engine needs two points to
+// fit a trend line. That is an ordinary state, not a failure, so it gets neutral
+// styling (the same surface/hair/muted language as EmptyPanel) rather than
+// ErrorPanel's red. ErrorPanel stays red for genuine faults: network drops,
+// 5xx, 403. Routing this case away from it keeps that signal meaningful.
+function NoDataPanel({ name }: { name: string }) {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bg px-8 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-hair bg-surface">
+        <Clock className="h-6 w-6 text-muted-2" />
+      </div>
+      <div>
+        <p className="text-sm font-bold text-text">No check-ins yet</p>
+        <p className="mt-1 max-w-sm text-xs text-muted-2">
+          {name} hasn&apos;t submitted enough check-ins yet for an analysis.
+          The engine needs at least two to read a trend.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ── Analysis panel ────────────────────────────────────────────────────────────
 
 type ConfirmedMacros = { protein: number; carbs: number; fats: number };
@@ -1156,6 +1180,9 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
     if (!selectedId) return;
     const client = localQueue.find((c) => c.id === selectedId);
     if (client?.status === CHECK_IN_STATUS.Approved) return;
+    // No check-ins on file — the route would 400 on its < 2 guard. Skip the
+    // request entirely; NoDataPanel renders from queue state alone.
+    if (client?.status === 'none') return;
 
     let ignore = false;
     fetch(`/api/checkin-analysis?clientId=${encodeURIComponent(selectedId)}`)
@@ -1284,7 +1311,12 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
         />
 
         {/* Right panel: loading / error / approved / analysis / empty */}
-        {loading ? (
+        {/* Checked before `loading` on purpose. The effect above no longer
+            fetches for this case, so `loading` would otherwise sit true and show
+            "Analysing… Running engine + Claude" for work that never happens. */}
+        {selectedClient?.status === 'none' ? (
+          <NoDataPanel name={selectedClient.name} />
+        ) : loading ? (
           <LoadingPanel name={selectedClient?.name ?? "client"} />
         ) : error ? (
           <ErrorPanel message={error} />
