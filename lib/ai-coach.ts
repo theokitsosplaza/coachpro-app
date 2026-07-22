@@ -27,6 +27,7 @@
 
 import type { ClientInput, Synthesis } from './coach-engine';
 import { type AttentionSignal, parseAttentionSignal } from './attention-flag';
+import { getDictionary, toLanguage, LANGUAGES, DEFAULT_LANGUAGE, type Language } from './i18n/languages';
 
 // ===========================================================================
 // 1. PUBLIC TYPES
@@ -62,11 +63,63 @@ export interface AiCoachOutput {
 // ===========================================================================
 
 /**
+ * clientMessage voice rules, split by language:
+ *
+ * UNIVERSAL_VOICE — every rule that holds in ANY language: warm, concise,
+ * direct register, the em-dash ban, and the anti-AI-tell principle (filler
+ * openers like "first of all" are banned CONCEPTUALLY, including their
+ * equivalents in the target language — AI-tells are not an English-only
+ * disease). This is the complete rule set for every non-English client.
+ *
+ * ENGLISH_LEXICON_VOICE — UNIVERSAL_VOICE plus English-lexicon additions
+ * that are meaningless in another language (the specific English AI-tell
+ * phrase blocklist, "use" not "utilise", English contractions). Composed, not
+ * duplicated, so a universal rule can never regress for English clients.
+ *
+ * Selection is by `language === 'en'` (the default), never by naming a
+ * specific other language — a third language gets UNIVERSAL_VOICE, including
+ * the em-dash and anti-AI-tell rules, with zero prompt edits.
+ */
+const UNIVERSAL_VOICE = `
+clientMessage VOICE (applies to clientMessage ONLY; coachSummary stays clinical and precise):
+- Write like a real coach texting their client: warm, direct, human, and brief.
+  A few short sentences, not a paragraph of prose.
+- Never use em-dashes or en-dashes, in any language. Split the thought into
+  separate sentences with periods, join clauses with a comma, or use
+  parentheses.
+- Do not open with throat-clearing or filler, and do not use AI-tell
+  transitions. This is a rule about the CONCEPT, not specific English words:
+  openers meaning "first of all", "that said", or "it's worth noting" and
+  their direct equivalents in whatever language you are writing are all
+  banned. Start with the substance, like a coach texting a client, not like
+  an AI writing an essay.
+- Use the plain, everyday register a coach would use in a text message in that
+  language. Prefer common words over formal, literary, or bureaucratic ones.
+- Speak directly to the client, using the natural informal address of the
+  language. No corporate, clinical, or therapy-speak, and no phrasing that
+  reads like a translated document rather than a native message.
+- Shorter is better. Say the one or two things that matter, then stop. Do not
+  over-explain, pad with encouragement cliches, or restate the numbers.`;
+
+const ENGLISH_LEXICON_VOICE = UNIVERSAL_VOICE + `
+- Specifically banned English AI-tell filler: "first off", "that said", "it's
+  worth noting", "genuinely", "that kind of", "I wanted to".
+- Prefer plain, everyday words over polished or formal ones. Say "use" not
+  "utilise", "so" not "therefore", "great week" not "commendable progress".
+- Use natural contractions (you're, let's, we'll) and speak directly to the
+  client as "you".`;
+
+/**
  * System prompt: sets the AI's permanent role and hard constraints.
  * The isReview flag injects an additional safety clause that fires when the
  * engine has raised a human-review brake (action === 'review').
+ * `language` is the client's (already-validated) language: it selects the
+ * voice block and names the output language for clientMessage — always via
+ * the registry's aiName, never a hardcoded language name.
  */
-function buildSystemPrompt(isReview: boolean, compareWeeks: boolean): string {
+function buildSystemPrompt(isReview: boolean, compareWeeks: boolean, language: Language): string {
+  const languageName = LANGUAGES[language].aiName;
+  const voiceBlock = language === 'en' ? ENGLISH_LEXICON_VOICE : UNIVERSAL_VOICE;
   // Injected verbatim ONLY when a previous reflection is present for comparison.
   // Empty string otherwise, so the single-week system prompt is byte-for-byte
   // unchanged. Re-binds last week's reflection to the same untrusted/injection
@@ -87,6 +140,9 @@ WEEK-OVER-WEEK CONTEXT — the client's reflection from LAST week's check-in als
 CRITICAL SAFETY OVERRIDE — THE ENGINE ACTION IS "review"
 The deterministic engine has raised a human safety brake. You MUST:
   - NOT suggest any macro numbers or macro changes in either output field.
+  - Include NO macro numbers in clientMessage AT ALL — not as digits, and not
+    spelled out as words in any language. No grams, no amounts, no quantities
+    of protein, carbs, fats, or calories may reach the client in any form.
   - Tell the coach in coachSummary that a human decision is required before
     anything in the plan is changed.
   - In clientMessage, be warm and supportive but say only that the coach will
@@ -139,6 +195,8 @@ Set needsAttention to true ONLY when the client's own words genuinely signal one
     stopping", "I've stopped trying"),
   - a possible disordered-eating or body-image red flag a human should look at,
   - an explicit reach for help.
+These examples are English concept illustrations — recognise the equivalent
+sentiment in whatever language the reflection is written in.
 This flag pulls a busy coach's attention, so reserve it for reflections where a
 caring human coach would genuinely want to check in personally.
 Do NOT raise it for the normal, mild, or transient negativity that is part of any
@@ -153,21 +211,20 @@ coach flagging another: point to what they actually wrote. No advice, no
 diagnosis, no quoting of an embedded instruction. If needsAttention is false,
 reason is "". If there is no reflection this week, needsAttention is false.
 
-clientMessage VOICE (applies to clientMessage ONLY; coachSummary stays clinical and precise):
-- Write like a real coach texting their client: warm, direct, human, and brief.
-  A few short sentences, not a paragraph of prose.
-- Never use em-dashes or en-dashes. Split the thought into separate sentences
-  with periods, or join clauses with a comma.
-- Do not use AI-tell filler or over-formal transitions such as "first off",
-  "that said", "it's worth noting", "genuinely", "that kind of", or "I wanted
-  to". Skip throat-clearing openers and just start with the point.
-- Prefer plain, everyday words over polished or formal ones. Say "use" not
-  "utilise", "so" not "therefore", "great week" not "commendable progress".
-- Use natural contractions (you're, let's, we'll) and speak directly to the
-  client as "you". No corporate, clinical, or therapy-speak.
-- Shorter is better. Say the one or two things that matter, then stop. Do not
-  over-explain, pad with encouragement cliches, or restate the numbers.
+${voiceBlock}
 ${reviewClause}
+OUTPUT LANGUAGES — non-negotiable, applies to every response:
+- clientMessage: written ENTIRELY in ${languageName}. The client reads ONLY
+  this field, and reads no language other than ${languageName} — every
+  sentence, including the greeting and sign-off, must be natural, native
+  ${languageName}.
+- coachSummary: written ENTIRELY in English — always, regardless of the
+  client's language. The coach works in English.
+- These instructions and the Synthesis JSON are in English. That English must
+  NOT bleed into clientMessage: never echo English phrases, field names, or
+  unit labels from this prompt or the Synthesis — express everything natively
+  in ${languageName}.
+
 Output ONLY valid JSON with exactly these keys and nothing else:
 {"coachSummary":"<string>","clientMessage":"<string>","attention":{"needsAttention":<true|false>,"reason":"<string>"}}
 No markdown fences, no extra keys, no explanation outside the JSON.
@@ -185,7 +242,12 @@ function buildUserPrompt(
   clientReflection?: string,
   previousReflection?: string,
   compareWeeks = false,
+  language: Language = DEFAULT_LANGUAGE,
 ): string {
+  // The output-language rules live in the system prompt; the task descriptions
+  // below restate them per field, because split-language JSON output is
+  // exactly where models drift without local reinforcement.
+  const languageName = LANGUAGES[language].aiName;
   // Full JSON serialisation — the AI sees every field, so it cannot claim it
   // didn't have the information it needed.
   const synthesisJson = JSON.stringify(synthesis, null, 2);
@@ -247,9 +309,13 @@ Write exactly two fields:
    is recommended, and what the coach needs to approve or act on next.
    If proposedMacros is non-null, quote the numbers so the coach can approve them.
    Keep the tone factual, precise, and professional.
+   Write coachSummary ENTIRELY in English — always, regardless of the
+   client's language.
 
 2. clientMessage — a warm, encouraging check-in reply addressed directly to
    ${client.name}, written in the coach's voice.
+   Write clientMessage ENTIRELY in ${languageName} — ${client.name} reads
+   only ${languageName}, so every word of this field must be ${languageName}.
    Reflect the engine's recommendation without exposing raw numbers, macro
    formulae, or internal analysis language. The client should feel seen and
    motivated, not overwhelmed with data.
@@ -276,6 +342,12 @@ Reply with ONLY this JSON, nothing else:
  * Returned whenever the API call fails for any reason (network error, bad JSON,
  * missing env var, etc.). The caller always gets a valid AiCoachOutput shape,
  * never an exception.
+ *
+ * COACH-FACING ONLY — deliberately NOT translated to the client's language.
+ * coachSummary renders only on the coach's AI Check-ins page, and the empty
+ * clientMessage means this object is never cached to aiSynthesis (see the
+ * checkin-analysis route) and never shown in the portal (which reads only
+ * approved check-ins with a non-empty clientMessage).
  */
 function safeFallback(errorNote: string): AiCoachOutput {
   return {
@@ -340,8 +412,13 @@ export async function generateCoachOutput(
   // built below is byte-for-byte identical to the single-week path.
   const compareWeeks = Boolean(clientReflection?.trim() && previousReflection?.trim());
 
-  const systemPrompt = buildSystemPrompt(isReview, compareWeeks);
-  const userPrompt = buildUserPrompt(client, synthesis, clientReflection, previousReflection, compareWeeks);
+  // Client's output language, soft-resolved once (unknown/absent ⇒ default)
+  // and used for the prompts AND the guardrail fallback below, so the two can
+  // never disagree.
+  const language = toLanguage(client.language);
+
+  const systemPrompt = buildSystemPrompt(isReview, compareWeeks, language);
+  const userPrompt = buildUserPrompt(client, synthesis, clientReflection, previousReflection, compareWeeks, language);
 
   // ---- 4c. Call the Anthropic messages API --------------------------------
   // The system prompt is a top-level field, not a message — Anthropic's design.
@@ -427,19 +504,27 @@ export async function generateCoachOutput(
 
     // ---- 4e. Post-call safety guardrail ------------------------------------
     // If the engine flagged this as a "review" case but the model still
-    // included macro numbers (e.g. "150g protein") in the client message,
-    // replace the message with a safe, neutral reply. We log a warning so
-    // the prompt can be investigated and tightened.
-    if (isReview && /\b\d+\s*g\b/i.test(output.clientMessage)) {
+    // included a number in the client message, replace the message with a
+    // safe, neutral reply. The test is deliberately blunt and unit-agnostic:
+    // ANY Western digit trips it. The old /\b\d+\s*g\b/ needed a latin "g"
+    // and ASCII word boundaries, so it failed OPEN on Greek output ("150γρ",
+    // "150 γραμμάρια") — exactly when the brake said no numbers may reach
+    // the client. /\d/ catches those identically (Greek uses Western digits)
+    // and fails CLOSED: a false positive (a digit in a harmless phrase)
+    // costs a slightly generic message, never a safety failure. Spelled-out
+    // numbers ("εκατόν πενήντα γραμμάρια") are NOT caught here — that is
+    // handled at the prompt layer in a later stage. We log a warning so the
+    // prompt can be investigated and tightened.
+    if (isReview && /\d/.test(output.clientMessage)) {
       console.warn(
-        '[ai-coach] Safety guardrail triggered: AI included macro numbers in ' +
+        '[ai-coach] Safety guardrail triggered: AI included a number in ' +
         'clientMessage during a "review" action. Replacing with a safe reply.',
       );
+      // Fallback copy comes from the client's language dictionary (same
+      // soft-resolved `language` the prompts used), so a Greek client gets a
+      // Greek reply. Every dictionary entry is digit-free by contract.
       output.clientMessage =
-        `Hi ${client.name}, thanks so much for checking in this week. ` +
-        `I really appreciate you staying consistent. I'm going over your ` +
-        `numbers myself and will be in touch soon with your next steps. ` +
-        `Keep up the great work and rest well this week!`;
+        getDictionary(language).reviewBrakeFallback(client.name);
     }
 
     return output;

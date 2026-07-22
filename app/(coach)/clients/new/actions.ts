@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { verifyCoachSession } from '@/lib/dal'
 import { deleteOrphanedAuthUser } from '@/lib/auth-user-cleanup'
+import { toLanguage } from '@/lib/i18n/languages'
+import { CHECK_IN_STATUS } from '@/lib/check-in-status'
 
 export type FormErrors = {
   name?: string
@@ -25,6 +27,7 @@ export type FormErrors = {
     email: string
     phone: string
     targetFiber: string
+    language: string
   }
 }
 
@@ -38,6 +41,7 @@ type ParsedData = {
   email: string | null
   phone: string | null
   targetFiber: number | null
+  language: string
 }
 
 const VALID_GOALS  = ['Fat Loss', 'Muscle Gain', 'Maintenance', 'Recomp']
@@ -55,6 +59,9 @@ function parseAndValidate(
   const email        = ((formData.get('email') as string) ?? '').trim().toLowerCase() || null
   const phone        = ((formData.get('phone') as string) ?? '').trim() || null
   const fiberRaw     = formData.get('targetFiber') as string
+  // SOFT validation: an unknown code silently falls back to the default —
+  // a bad language value must never block a save (see lib/i18n/languages.ts).
+  const language     = toLanguage(formData.get('language'))
 
   const _values = {
     name,
@@ -66,6 +73,7 @@ function parseAndValidate(
     email:         email ?? '',
     phone:         phone ?? '',
     targetFiber:   fiberRaw ?? '',
+    language,
   }
 
   const errors: FormErrors = {}
@@ -89,7 +97,7 @@ function parseAndValidate(
 
   const targetFiber = fiberRaw ? parseInt(fiberRaw, 10) : null
 
-  return { data: { name, goal, currentPhase, targetProtein, targetCarbs, targetFats, email, phone, targetFiber } }
+  return { data: { name, goal, currentPhase, targetProtein, targetCarbs, targetFats, email, phone, targetFiber, language } }
 }
 
 function valuesFromParsed(data: ParsedData): NonNullable<FormErrors['_values']> {
@@ -103,6 +111,7 @@ function valuesFromParsed(data: ParsedData): NonNullable<FormErrors['_values']> 
     email:         data.email ?? '',
     phone:         data.phone ?? '',
     targetFiber:   data.targetFiber != null ? String(data.targetFiber) : '',
+    language:      data.language,
   }
 }
 
@@ -147,7 +156,7 @@ export async function updateClient(
 
   const current = await prisma.client.findUnique({
     where: { id: clientId, coachId: coach.id },
-    select: { email: true, authUserId: true },
+    select: { email: true, authUserId: true, language: true },
   })
   if (!current) return { _form: 'Client not found.', _values }
 
@@ -163,11 +172,30 @@ export async function updateClient(
   const oldAuthUserId = emailChanged ? current.authUserId : null
   const updateData = emailChanged ? { ...result.data, authUserId: null } : result.data
 
+  // Cached AI output (CheckIn.aiSynthesis) embeds the clientMessage in the
+  // client's OLD language, and the analysis route serves the cache without
+  // ever re-checking language — so a language change must invalidate it.
+  // Only NON-approved check-ins are cleared: approved ones hold the message
+  // the coach already reviewed/sent, and rewriting history in a new language
+  // would be wrong. Runs in the same transaction as the update so a failed
+  // clear can never leave a changed language serving stale-language cache.
+  const languageChanged = result.data.language !== current.language
+
   try {
-    await prisma.client.update({
-      where: { id: clientId, coachId: coach.id },
-      data: updateData,
-    })
+    await prisma.$transaction([
+      prisma.client.update({
+        where: { id: clientId, coachId: coach.id },
+        data: updateData,
+      }),
+      ...(languageChanged
+        ? [prisma.checkIn.updateMany({
+            // Ownership is already verified: the findUnique above scoped
+            // clientId to this coach, or we returned before reaching here.
+            where: { clientId, status: { not: CHECK_IN_STATUS.Approved } },
+            data: { aiSynthesis: null },
+          })]
+        : []),
+    ])
   } catch (err) {
     console.error('[updateClient]', err)
     return {

@@ -31,6 +31,10 @@ export interface ClientInput {
   targetProtein: number; // grams/day
   targetCarbs: number; // grams/day
   targetFats: number; // grams/day
+  // ISO 639-1 client language (see lib/i18n/languages.ts). Ignored by the
+  // engine's math — carried here so the narrative layer (lib/ai-coach.ts) can
+  // pick client-facing fallback copy. Optional: absent/unknown ⇒ default.
+  language?: string;
 }
 
 export interface CheckInInput {

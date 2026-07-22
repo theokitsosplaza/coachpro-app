@@ -6,6 +6,7 @@ import { AlertTriangle, ChevronDown, Loader2 } from "lucide-react";
 import { createClient, updateClient, type FormErrors } from "./actions";
 import { buttonClass } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { LANGUAGES, DEFAULT_LANGUAGE } from "@/lib/i18n/languages";
 
 const GOALS  = ["Fat Loss", "Muscle Gain", "Maintenance", "Recomp"] as const;
 const PHASES = ["Cut", "Bulk", "Maintenance", "Not started yet"] as const;
@@ -21,6 +22,7 @@ export type ClientInitialValues = {
   email: string | null
   phone: string | null
   targetFiber: number | null
+  language: string
 }
 
 type Props = {
@@ -95,15 +97,19 @@ export function AddClientForm({ initialValues }: Props) {
     email:         v?.email         ?? initialValues?.email         ?? "",
     phone:         v?.phone         ?? initialValues?.phone         ?? "",
     targetFiber:   v?.targetFiber   ?? (initialValues?.targetFiber != null ? String(initialValues.targetFiber) : ""),
+    language:      v?.language      ?? initialValues?.language      ?? DEFAULT_LANGUAGE,
   };
 
   // Key forces input containers to remount (applying new defaultValues) when
   // the server returns a _values snapshot after a failed submission.
   const formKey = v ? JSON.stringify(v) : "initial";
 
+  // A non-default language counts as "has optional values" so the collapsible
+  // opens on edit and the setting is never hidden from the coach.
   const hasOptionalValues = !!(
     v?.email || v?.phone || v?.targetFiber ||
-    initialValues?.email || initialValues?.phone || initialValues?.targetFiber
+    initialValues?.email || initialValues?.phone || initialValues?.targetFiber ||
+    dv.language !== DEFAULT_LANGUAGE
   );
 
   const cancelHref = isEdit ? `/clients/${initialValues.id}` : "/clients";
@@ -272,14 +278,30 @@ export function AddClientForm({ initialValues }: Props) {
                   className={cn(inputBase, "border-border")} />
               </div>
             </div>
-            <div className="max-w-xs">
-              <label htmlFor="targetFiber" className="block text-sm font-medium text-foreground mb-1.5">
-                Target Fiber (g)
-              </label>
-              <input id="targetFiber" name="targetFiber" type="number" min="0"
-                placeholder="30" disabled={isPending}
-                defaultValue={dv.targetFiber}
-                className={cn(inputBase, "border-border")} />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="targetFiber" className="block text-sm font-medium text-foreground mb-1.5">
+                  Target Fiber (g)
+                </label>
+                <input id="targetFiber" name="targetFiber" type="number" min="0"
+                  placeholder="30" disabled={isPending}
+                  defaultValue={dv.targetFiber}
+                  className={cn(inputBase, "border-border")} />
+              </div>
+              <div>
+                <label htmlFor="language" className="block text-sm font-medium text-foreground mb-1.5">
+                  Language
+                </label>
+                <select
+                  id="language" name="language" disabled={isPending}
+                  defaultValue={dv.language}
+                  className={cn(inputBase, "cursor-pointer border-border")}
+                >
+                  {Object.entries(LANGUAGES).map(([code, { label }]) => (
+                    <option key={code} value={code}>{label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         </details>

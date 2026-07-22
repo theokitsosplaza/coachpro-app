@@ -83,6 +83,7 @@ export async function GET(request: Request) {
       targetProtein: row.targetProtein,
       targetCarbs:   row.targetCarbs,
       targetFats:    row.targetFats,
+      language:      row.language,
     };
 
     const checkInInputs: CheckInInput[] = row.checkIns.map((c: (typeof row.checkIns)[number]) => ({

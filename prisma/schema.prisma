@@ -39,6 +39,11 @@ model Client {
   email         String?
   phone         String?
   targetFiber   Int?
+  // Client-facing output language, ISO 639-1 ("en", "el"). Plain String +
+  // default, mirroring CheckIn.status — the allow-list lives in TS
+  // (lib/i18n/languages.ts), not a Prisma enum. @default backfills the
+  // existing prod rows on db push (NOT NULL without it would fail).
+  language      String         @default("en")
   archivedAt    DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
