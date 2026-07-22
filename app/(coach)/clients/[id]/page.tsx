@@ -120,7 +120,11 @@ function WeightChart({ checkIns }: { checkIns: Array<{ date: Date; weight: numbe
     'Z',
   ].join(' ')
 
-  const yTicks = [maxW, (minW + maxW) / 2, minW].map((w) => ({
+  // A flat series (every check-in the same weight) collapses max / mid / min
+  // into one value — which used to render three gridlines stacked on the same
+  // y with duplicate React keys. Dedupe to the distinct weights only; the
+  // render below keys by index since these are static gridlines.
+  const yTicks = [...new Set([maxW, (minW + maxW) / 2, minW])].map((w) => ({
     w,
     y: yAt(w),
   }))
@@ -150,9 +154,9 @@ function WeightChart({ checkIns }: { checkIns: Array<{ date: Date; weight: numbe
           </linearGradient>
         </defs>
 
-        {yTicks.map(({ w, y }) => (
+        {yTicks.map(({ y }, i) => (
           <line
-            key={w}
+            key={i}
             x1={C_PAD.left}
             y1={y.toFixed(1)}
             x2={C_W - C_PAD.right}
