@@ -26,7 +26,6 @@ export default async function EditClientPage({
         targetFats: client.targetFats,
         email: client.email,
         phone: client.phone,
-        targetFiber: client.targetFiber,
         language: client.language,
       }}
     />

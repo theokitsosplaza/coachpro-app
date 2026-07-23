@@ -38,7 +38,6 @@ model Client {
   targetFats    Float
   email         String?
   phone         String?
-  targetFiber   Int?
   // Client-facing output language, ISO 639-1 ("en", "el"). Plain String +
   // default, mirroring CheckIn.status — the allow-list lives in TS
   // (lib/i18n/languages.ts), not a Prisma enum. @default backfills the

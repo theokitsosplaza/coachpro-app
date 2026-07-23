@@ -392,15 +392,6 @@ export default async function ClientProfilePage({
             </span>
           </div>
 
-          {client.targetFiber != null && (
-            <div className="flex items-center justify-between border-t border-hair py-3">
-              <span className="text-[13px] text-muted-1">Fiber target</span>
-              <span className="font-mono text-[17px] font-semibold text-text">
-                {client.targetFiber}g
-              </span>
-            </div>
-          )}
-
           {(client.email || client.phone) && (
             <>
               {client.email && (

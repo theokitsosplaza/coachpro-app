@@ -21,7 +21,6 @@ export type ClientInitialValues = {
   targetFats: number
   email: string | null
   phone: string | null
-  targetFiber: number | null
   language: string
 }
 
@@ -96,7 +95,6 @@ export function AddClientForm({ initialValues }: Props) {
     targetFats:    v?.targetFats    ?? (initialValues ? String(initialValues.targetFats)     : ""),
     email:         v?.email         ?? initialValues?.email         ?? "",
     phone:         v?.phone         ?? initialValues?.phone         ?? "",
-    targetFiber:   v?.targetFiber   ?? (initialValues?.targetFiber != null ? String(initialValues.targetFiber) : ""),
     language:      v?.language      ?? initialValues?.language      ?? DEFAULT_LANGUAGE,
   };
 
@@ -107,8 +105,8 @@ export function AddClientForm({ initialValues }: Props) {
   // A non-default language counts as "has optional values" so the collapsible
   // opens on edit and the setting is never hidden from the coach.
   const hasOptionalValues = !!(
-    v?.email || v?.phone || v?.targetFiber ||
-    initialValues?.email || initialValues?.phone || initialValues?.targetFiber ||
+    v?.email || v?.phone ||
+    initialValues?.email || initialValues?.phone ||
     dv.language !== DEFAULT_LANGUAGE
   );
 
@@ -279,15 +277,6 @@ export function AddClientForm({ initialValues }: Props) {
               </div>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="targetFiber" className="block text-sm font-medium text-text mb-1.5">
-                  Target Fiber (g)
-                </label>
-                <input id="targetFiber" name="targetFiber" type="number" min="0"
-                  placeholder="30" disabled={isPending}
-                  defaultValue={dv.targetFiber}
-                  className={cn(inputBase, "border-hair-2")} />
-              </div>
               <div>
                 <label htmlFor="language" className="block text-sm font-medium text-text mb-1.5">
                   Language

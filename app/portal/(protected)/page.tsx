@@ -406,15 +406,6 @@ export default async function PortalPage() {
           </div>
         </div>
 
-        {client.targetFiber != null && (
-          <div className="mt-3 flex items-center justify-between rounded-xl bg-surface-3 px-4 py-3">
-            <p className="text-sm text-muted-foreground">Fiber</p>
-            <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
-              {client.targetFiber}
-              <span className="ml-0.5 text-xs font-normal text-muted-foreground">g</span>
-            </p>
-          </div>
-        )}
 
         <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
           <p className="text-sm text-muted-foreground">Total</p>

@@ -26,7 +26,6 @@ export type FormErrors = {
     targetFats: string
     email: string
     phone: string
-    targetFiber: string
     language: string
   }
 }
@@ -40,7 +39,6 @@ type ParsedData = {
   targetFats: number
   email: string | null
   phone: string | null
-  targetFiber: number | null
   language: string
 }
 
@@ -58,7 +56,6 @@ function parseAndValidate(
   const fatsRaw      = formData.get('targetFats') as string
   const email        = ((formData.get('email') as string) ?? '').trim().toLowerCase() || null
   const phone        = ((formData.get('phone') as string) ?? '').trim() || null
-  const fiberRaw     = formData.get('targetFiber') as string
   // SOFT validation: an unknown code silently falls back to the default —
   // a bad language value must never block a save (see lib/i18n/languages.ts).
   const language     = toLanguage(formData.get('language'))
@@ -72,7 +69,6 @@ function parseAndValidate(
     targetFats:    fatsRaw,
     email:         email ?? '',
     phone:         phone ?? '',
-    targetFiber:   fiberRaw ?? '',
     language,
   }
 
@@ -95,9 +91,7 @@ function parseAndValidate(
 
   if (Object.keys(errors).length > 0) return { errors: { ...errors, _values } }
 
-  const targetFiber = fiberRaw ? parseInt(fiberRaw, 10) : null
-
-  return { data: { name, goal, currentPhase, targetProtein, targetCarbs, targetFats, email, phone, targetFiber, language } }
+  return { data: { name, goal, currentPhase, targetProtein, targetCarbs, targetFats, email, phone, language } }
 }
 
 function valuesFromParsed(data: ParsedData): NonNullable<FormErrors['_values']> {
@@ -110,7 +104,6 @@ function valuesFromParsed(data: ParsedData): NonNullable<FormErrors['_values']> 
     targetFats:    String(data.targetFats),
     email:         data.email ?? '',
     phone:         data.phone ?? '',
-    targetFiber:   data.targetFiber != null ? String(data.targetFiber) : '',
     language:      data.language,
   }
 }
