@@ -45,6 +45,7 @@ export type QueueClientData = {
     coachSummary:     string;
     clientMessage:    string;
     clientReflection: string;
+    changeNote:       string | null;
     macros: { protein: number; carbs: number; fats: number };
     approvedAt:       string;
     attention:        AttentionSignal | null;
@@ -70,6 +71,7 @@ type AnalysisResult = {
     fatigueScore: number;
     status: string;
     clientReflection: string;
+    changeNote: string | null;
   };
   // Weight from the immediately-preceding check-in. Always sent by the route
   // (it requires >= 2 check-ins before analysing), and used only for the
@@ -447,6 +449,25 @@ function EmptyPanel() {
 // styling (the same surface/hair/muted language as EmptyPanel) rather than
 // ErrorPanel's red. ErrorPanel stays red for genuine faults: network drops,
 // 5xx, 403. Routing this case away from it keeps that signal meaningful.
+// ── Coach-recorded "change this week" note ────────────────────────────────────
+
+// Renders only when a note exists — the common no-note week shows nothing.
+// Positioned above the reflection: coach-recorded fact before client voice.
+function ChangeNoteCard({ note }: { note: string | null }) {
+  const text = note?.trim();
+  if (!text) return null;
+  return (
+    <section aria-label="Coach-recorded change this week">
+      <div className="rounded-2xl border border-hair bg-surface p-[18px] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-1">
+          Change this week — coach note
+        </p>
+        <p className="text-[13.5px] leading-[1.6] text-text/90">{text}</p>
+      </div>
+    </section>
+  );
+}
+
 function NoDataPanel({ name, title = "No check-ins yet" }: { name: string; title?: string }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bg px-8 text-center">
@@ -698,6 +719,9 @@ function AnalysisPanel({
               ))}
             </div>
           )}
+
+          {/* Coach-recorded change note (renders only when present) */}
+          <ChangeNoteCard note={latestCheckIn.changeNote} />
 
           {/* Client's raw reflection — their own words, shown above the AI's take */}
           <ReflectionCard name={clientInput.name} reflection={latestCheckIn.clientReflection} />
@@ -1068,6 +1092,9 @@ function ApprovedPanel({
             );
           })()}
 
+          {/* Coach-recorded change note (renders only when present) */}
+          <ChangeNoteCard note={savedAnalysis.changeNote} />
+
           {/* Client's raw reflection — their own words, shown above the AI's take */}
           <ReflectionCard name={client.name} reflection={savedAnalysis.clientReflection} />
 
@@ -1312,6 +1339,7 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
                 coachSummary:     analysis.aiOutput.coachSummary,
                 clientMessage,
                 clientReflection: analysis.latestCheckIn.clientReflection,
+                changeNote:       analysis.latestCheckIn.changeNote,
                 attention:        analysis.aiOutput.attention,
                 macros: {
                   protein: confirmedMacros?.protein ?? analysis.clientInput.targetProtein,

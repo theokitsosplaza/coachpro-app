@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
 import { createCheckIn } from "../actions";
 import type { CheckInFormErrors } from "@/lib/check-in-validation";
 import { buttonClass } from "@/components/ui/button";
@@ -225,6 +225,31 @@ export function CheckInForm({ clientId, clientName, lastCheckIn }: Props) {
             <FieldError msg={errors.clientReflection} />
           </div>
         </div>
+
+        {/* ── Change this week (optional — collapsed, zero friction) ── */}
+        <details className="group rounded-2xl border border-hair bg-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+          <summary className="flex cursor-pointer list-none items-center justify-between px-6 py-4 [&::-webkit-details-marker]:hidden">
+            <span className="text-sm font-medium text-muted-2 group-open:text-text transition-colors">
+              Did anything change this week?{" "}
+              <span className="text-muted-3">(optional)</span>
+            </span>
+            <ChevronDown className="h-4 w-4 text-muted-2 transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="border-t border-hair px-6 pb-6 pt-4">
+            <p className="mb-3 text-xs text-muted-2">
+              New job, injury, holiday, stopped a supplement — anything in the
+              client&apos;s situation the AI should treat as this week&apos;s context.
+              Never shown to the client.
+            </p>
+            <textarea
+              id="changeNote" name="changeNote" rows={3} maxLength={500}
+              placeholder="e.g. Started a new warehouse job — on his feet 10 hours a day. Stopped creatine."
+              disabled={isPending}
+              className={cn(textareaBase, "border-hair-2", errors.changeNote && "border-red focus:ring-[color-mix(in_oklab,var(--red)_30%,transparent)]")}
+            />
+            <FieldError msg={errors.changeNote} />
+          </div>
+        </details>
 
         {/* ── Cycle flag ────────────────────────────────────────── */}
         <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-hair bg-surface px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-colors hover:bg-white/[0.02]">

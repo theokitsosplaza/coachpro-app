@@ -160,6 +160,9 @@ export async function GET(request: Request) {
       aiOutput = await generateCoachOutput(
         clientInput, synthesis, latest.clientReflection, previous.clientReflection,
         questionnaireContext,
+        // This week's coach-recorded change note — latest check-in's only, by
+        // design; older notes stay in history but never feed the AI.
+        latest.changeNote ?? undefined,
       );
 
       // Cache ONLY a genuine success. generateCoachOutput never throws — on any
@@ -207,6 +210,7 @@ export async function GET(request: Request) {
         fatigueScore:     latest.fatigueScore,
         status:           latest.status,
         clientReflection: latest.clientReflection,
+        changeNote:       latest.changeNote,
       },
       // The immediately-preceding check-in's weight, so the UI can show the
       // kg change across this one period. The engine consumes the previous

@@ -103,6 +103,13 @@ model CheckIn {
   // client check-in form (see lib/check-in-validation.ts).
   clientReflection String @default("")
 
+  // Coach-recorded "did anything change this week?" note (new job, injury,
+  // holiday, stopped a supplement). Optional per check-in; null = nothing
+  // recorded. Feeds coachSummary + attention flag context ONLY — never the
+  // engine, never clientMessage. Column added to prod via
+  // prisma/add-change-note-column.sql (surgical db execute, no push).
+  changeNote    String?
+
   aiSynthesis   String?
   status        String   @default("Pending")
   cycleAffected Boolean  @default(false)

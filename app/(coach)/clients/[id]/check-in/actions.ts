@@ -17,7 +17,7 @@ export async function createCheckIn(
   const result = validateCheckInFormData(formData, { requireDate: true })
   if (!result.ok) return result.errors
 
-  const { weight, loggedProtein, loggedCarbs, loggedFats, sleepScore, fatigueScore, cycleAffected, clientReflection } = result
+  const { weight, loggedProtein, loggedCarbs, loggedFats, sleepScore, fatigueScore, cycleAffected, clientReflection, changeNote } = result
   if (!result.date) return { _form: 'Missing check-in date.' } // unreachable: requireDate validated above
 
   // Verify the client belongs to the authenticated coach before writing.
@@ -58,6 +58,7 @@ export async function createCheckIn(
           fatigueScore,
           cycleAffected,
           clientReflection,
+          changeNote: changeNote || null,
           status: CHECK_IN_STATUS.Pending,
         },
       }),

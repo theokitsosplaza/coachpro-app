@@ -46,6 +46,7 @@ export default async function AICheckInsPage() {
             coachSummary:     parsed.coachSummary  ?? '',
             clientMessage:    parsed.clientMessage ?? '',
             clientReflection: latest.clientReflection,
+            changeNote:       latest.changeNote,
             macros: {
               protein: c.targetProtein,
               carbs:   c.targetCarbs,

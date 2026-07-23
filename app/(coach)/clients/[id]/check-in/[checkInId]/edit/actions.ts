@@ -18,7 +18,7 @@ export async function updateCoachCheckIn(
   const result = validateCheckInFormData(formData, { requireDate: true })
   if (!result.ok) return result.errors
 
-  const { weight, loggedProtein, loggedCarbs, loggedFats, sleepScore, fatigueScore, cycleAffected, clientReflection } = result
+  const { weight, loggedProtein, loggedCarbs, loggedFats, sleepScore, fatigueScore, cycleAffected, clientReflection, changeNote } = result
   if (!result.date) return { _form: 'Missing check-in date.' } // unreachable: requireDate validated above
 
   const client = await prisma.client.findUnique({
@@ -61,6 +61,7 @@ export async function updateCoachCheckIn(
           fatigueScore,
           cycleAffected,
           clientReflection,
+          changeNote: changeNote || null,
           aiSynthesis: null,
           ...(wasApproved && { status: CHECK_IN_STATUS.Pending }),
         },

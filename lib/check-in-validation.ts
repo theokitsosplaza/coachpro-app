@@ -1,5 +1,10 @@
 export const MIN_REFLECTION_LENGTH = 10
 
+// Cap for the coach's optional "did anything change this week?" note — bounds
+// the AI prompt. (The client reflection stays deliberately uncapped — that is
+// a separate ticket; do not cap it here.)
+export const MAX_CHANGE_NOTE_LENGTH = 500
+
 // Earliest calendar day a coach may date a check-in. Fat-finger guard only —
 // nothing in the product predates this.
 export const MIN_CHECK_IN_DAY = '2020-01-01'
@@ -13,6 +18,7 @@ export type CheckInFormErrors = {
   sleepScore?: string
   fatigueScore?: string
   clientReflection?: string
+  changeNote?: string
   _form?: string
 }
 
@@ -26,6 +32,10 @@ type ValidatedCheckIn = {
   fatigueScore: number
   cycleAffected: boolean
   clientReflection: string
+  // Coach's optional this-week change note, trimmed; '' when blank (the coach
+  // actions store '' as null). No minimum — "new job" is a meaningful note.
+  // The portal forms never submit it and the portal action never writes it.
+  changeNote: string
   // Validated "YYYY-MM-DD" calendar day. Present iff requireDate was passed —
   // only the coach forms submit a date; portal check-ins are always stamped
   // now() server-side so clients can never backdate.
@@ -115,6 +125,10 @@ export function validateCheckInFormData(
       date = dateRaw
   }
 
+  const changeNote = ((formData.get('changeNote') as string | null) ?? '').trim()
+  if (changeNote.length > MAX_CHANGE_NOTE_LENGTH)
+    errors.changeNote = `Keep the change note under ${MAX_CHANGE_NOTE_LENGTH} characters.`
+
   const clientReflection = ((formData.get('clientReflection') as string | null) ?? '').trim()
   if (requireReflection) {
     if (clientReflection.length < MIN_REFLECTION_LENGTH)
@@ -127,5 +141,5 @@ export function validateCheckInFormData(
 
   if (Object.keys(errors).length > 0) return { ok: false, errors }
 
-  return { ok: true, weight, loggedProtein, loggedCarbs, loggedFats, sleepScore, fatigueScore, cycleAffected, clientReflection, date }
+  return { ok: true, weight, loggedProtein, loggedCarbs, loggedFats, sleepScore, fatigueScore, cycleAffected, clientReflection, changeNote, date }
 }
