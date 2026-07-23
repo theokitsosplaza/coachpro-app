@@ -1,4 +1,5 @@
 import { verifyCoachSession } from '@/lib/dal';
+import { parseCoachQuestions } from '@/lib/questionnaire';
 import { SettingsClient } from './SettingsClient';
 
 export default async function SettingsPage() {
@@ -7,6 +8,7 @@ export default async function SettingsPage() {
   return (
     <SettingsClient
       isAdmin={coach.isAdmin}
+      initialQuestions={parseCoachQuestions(coach.questionnaire)}
       initialProfile={{
         name:         coach.name         ?? '',
         email:        coach.email,

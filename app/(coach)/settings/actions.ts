@@ -1,10 +1,53 @@
 'use server';
 import type { User } from '@supabase/supabase-js';
+import type { Prisma } from '@prisma/client';
 import { verifyCoachSession } from '@/lib/dal';
 import { prisma } from '@/lib/prisma';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { findAuthUserByEmail } from '@/lib/supabase/find-auth-user';
+import { validateQuestions } from '@/lib/questionnaire';
+import { CHECK_IN_STATUS } from '@/lib/check-in-status';
+
+// ── saveCoachQuestionnaire ────────────────────────────────────────────────────
+
+export type SaveQuestionnaireState = { error: string } | { success: true }
+
+export async function saveCoachQuestionnaire(
+  questionsRaw: unknown,
+): Promise<SaveQuestionnaireState> {
+  const coach = await verifyCoachSession();
+
+  // Strict validation — a save rejects rather than silently repairing, so a
+  // coach never loses a question to a quiet sanitiser. An EMPTY list is valid
+  // (deliberately deleted everything).
+  const result = validateQuestions(questionsRaw);
+  if (!result.ok) return { error: result.error };
+
+  try {
+    // Any questionnaire change (delete, add, reorder) can change the AI
+    // context for clients who already answered — deleted questions purge from
+    // the context immediately. Cached aiSynthesis embedding the OLD context
+    // must not survive, so clear non-approved caches for ALL this coach's
+    // clients in the same transaction (the language-change pattern). Approved
+    // history stays frozen. Both writes land or neither does.
+    await prisma.$transaction([
+      prisma.coach.update({
+        where: { id: coach.id },
+        data:  { questionnaire: result.questions as unknown as Prisma.InputJsonValue },
+      }),
+      prisma.checkIn.updateMany({
+        where: { status: { not: CHECK_IN_STATUS.Approved }, client: { coachId: coach.id } },
+        data:  { aiSynthesis: null },
+      }),
+    ]);
+  } catch (err) {
+    console.error('[saveCoachQuestionnaire]', err);
+    return { error: 'Something went wrong saving the questionnaire. Please try again.' };
+  }
+
+  return { success: true };
+}
 
 export async function updateCoachProfile(fields: {
   name: string;

@@ -5,6 +5,7 @@ import { verifyCoachSession } from '@/lib/dal'
 import { analyzeClient } from '@/lib/coach-engine'
 import type { Triage, Severity } from '@/lib/coach-engine'
 import { CHECK_IN_STATUS } from '@/lib/check-in-status'
+import { parseCoachQuestions, parseAnswerSet, visibleAnswers } from '@/lib/questionnaire'
 import { cn } from '@/lib/utils'
 import { InviteButton } from './InviteButton'
 import { Archive, ClipboardList, ChevronLeft, Plus, Pencil, AlertTriangle } from 'lucide-react'
@@ -265,6 +266,15 @@ export default async function ClientProfilePage({
   if (!client) notFound()
 
   const synthesis = analyzeClient(client, client.checkIns)
+
+  // Background card data — the SAME purge-on-delete filter the AI context
+  // uses (lib/questionnaire.ts), so what the coach sees here is exactly what
+  // the AI reads: answers to the coach's CURRENT questions only, snapshot
+  // labels, current order.
+  const backgroundPairs = visibleAnswers(
+    parseCoachQuestions(coach.questionnaire),
+    parseAnswerSet(client.questionnaireAnswers),
+  )
   const totalCalories =
     client.targetProtein * 4 + client.targetCarbs * 4 + client.targetFats * 9
 
@@ -495,6 +505,33 @@ export default async function ClientProfilePage({
       </div>
 
       {/* ── WEIGHT TREND CHART ─────────────────────────────────────────────── */}
+      {/* ── Background (coach-recorded onboarding context) ────────────────── */}
+      <div className={cn(CARD, 'mb-4 p-[22px]')}>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <span className={EYEBROW}>Background</span>
+          <Link
+            href={`/clients/${client.id}/questionnaire`}
+            className="rounded font-sans text-[12px] font-semibold text-accent-lite transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring"
+          >
+            {backgroundPairs.length > 0 ? 'Edit' : 'Fill in questionnaire'}
+          </Link>
+        </div>
+        {backgroundPairs.length > 0 ? (
+          <dl className="grid gap-x-8 sm:grid-cols-2">
+            {backgroundPairs.map((p) => (
+              <div key={p.questionId} className="flex items-baseline justify-between gap-4 border-b border-hair py-2">
+                <dt className="text-[12.5px] text-muted-1">{p.label}</dt>
+                <dd className="text-right text-[13px] font-medium text-text">{p.value}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <p className="text-[13px] text-muted-2">
+            No background recorded yet. These answers become stable context the AI reads on every check-in.
+          </p>
+        )}
+      </div>
+
       <WeightChart checkIns={client.checkIns} />
 
       {/* ── CHECK-IN HISTORY ───────────────────────────────────────────────── */}

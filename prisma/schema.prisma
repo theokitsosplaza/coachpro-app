@@ -16,6 +16,10 @@ model Coach {
   businessName String?
   website      String?
   isAdmin      Boolean         @default(false)   // platform admin — gates inviteCoach
+  // Per-coach client questionnaire definitions (CoachQuestion[] — see
+  // lib/questionnaire.ts). null ⇒ TS DEFAULT_QUESTIONS. Column added to prod
+  // via prisma/add-questionnaire-columns.sql (surgical db execute, no push).
+  questionnaire Json?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
@@ -43,6 +47,10 @@ model Client {
   // (lib/i18n/languages.ts), not a Prisma enum. @default backfills the
   // existing prod rows on db push (NOT NULL without it would fail).
   language      String         @default("en")
+  // Coach-recorded onboarding answers (AnswerSet snapshot — see
+  // lib/questionnaire.ts). null ⇒ no background context for the AI. Column
+  // added to prod via prisma/add-questionnaire-columns.sql.
+  questionnaireAnswers Json?
   archivedAt    DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt

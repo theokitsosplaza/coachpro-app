@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { analyzeClient, rationaleForFinalWarnings, type ClientInput, type CheckInInput } from '@/lib/coach-engine';
 import { generateCoachOutput, type AiCoachOutput } from '@/lib/ai-coach';
 import { appendAttentionFlag, parseAttentionSignal } from '@/lib/attention-flag';
+import { parseCoachQuestions, parseAnswerSet, renderQuestionnaireContext } from '@/lib/questionnaire';
 import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic'
@@ -27,7 +28,9 @@ export async function GET(request: Request) {
 
   const coach = await prisma.coach.findUnique({
     where:  { authUserId: data.claims.sub },
-    select: { id: true },
+    // questionnaire: the coach's CURRENT question list — needed so deleted
+    // questions purge from the AI context immediately (see lib/questionnaire).
+    select: { id: true, questionnaire: true },
   });
   if (!coach) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -142,11 +145,21 @@ export async function GET(request: Request) {
     }
 
     if (!aiOutput) {
+      // Coach-recorded onboarding context — built AFTER the engine has run,
+      // from data the engine never sees, and passed alongside the reflections.
+      // Purge-on-delete: only answers to the coach's CURRENT questions are
+      // included. Empty string ⇒ the AI layer omits it entirely.
+      const questionnaireContext = renderQuestionnaireContext(
+        parseCoachQuestions(coach.questionnaire),
+        parseAnswerSet(row.questionnaireAnswers),
+      );
+
       // Pass this week's + last week's free-text reflections as tone-only context.
       // The system prompt forbids either from overriding the Synthesis or safety
       // logic, and enables a bounded week-over-week comparison only when both exist.
       aiOutput = await generateCoachOutput(
         clientInput, synthesis, latest.clientReflection, previous.clientReflection,
+        questionnaireContext,
       );
 
       // Cache ONLY a genuine success. generateCoachOutput never throws — on any

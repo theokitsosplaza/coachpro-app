@@ -20,10 +20,22 @@ import {
   Info,
   UserPlus,
   Loader2,
+  ArrowUp,
+  ArrowDown,
+  X,
+  Plus,
 } from "lucide-react";
 import { buttonClass } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { updateCoachProfile, inviteCoach, type InviteCoachState } from "./actions";
+import { updateCoachProfile, inviteCoach, saveCoachQuestionnaire, type InviteCoachState } from "./actions";
+import {
+  DEFAULT_QUESTIONS,
+  MIN_SELECT_OPTIONS,
+  MAX_QUESTION_LABEL,
+  MAX_QUESTIONS,
+  type CoachQuestion,
+  type QuestionType,
+} from "@/lib/questionnaire";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -401,7 +413,176 @@ const AUTONOMY_OPTIONS: {
   },
 ];
 
-function CopilotTab() {
+// ── Client questionnaire section (LIVE — not part of the mock dials below) ────
+
+function QuestionnaireSection({ initialQuestions }: { initialQuestions: CoachQuestion[] }) {
+  const [questions, setQuestions] = useState<CoachQuestion[]>(initialQuestions);
+  const [newLabel, setNewLabel] = useState("");
+  const [newType, setNewType] = useState<QuestionType>("text");
+  const [newOptions, setNewOptions] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  const move = (index: number, dir: -1 | 1) => {
+    setQuestions((qs) => {
+      const target = index + dir;
+      if (target < 0 || target >= qs.length) return qs;
+      const next = [...qs];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  };
+
+  const remove = (index: number) =>
+    setQuestions((qs) => qs.filter((_, i) => i !== index));
+
+  const add = () => {
+    setError(null);
+    const label = newLabel.trim();
+    if (!label) { setError("Enter a question label."); return; }
+    if (questions.length >= MAX_QUESTIONS) { setError(`At most ${MAX_QUESTIONS} questions.`); return; }
+    const q: CoachQuestion = { id: crypto.randomUUID(), label, type: newType };
+    if (newType === "select") {
+      const options = newOptions.split(",").map((o) => o.trim()).filter(Boolean);
+      if (options.length < MIN_SELECT_OPTIONS) {
+        setError(`Single-select needs at least ${MIN_SELECT_OPTIONS} options (comma-separated).`);
+        return;
+      }
+      q.options = options;
+    }
+    setQuestions((qs) => [...qs, q]);
+    setNewLabel(""); setNewOptions("");
+  };
+
+  const save = () => {
+    setError(null);
+    startTransition(async () => {
+      const result = await saveCoachQuestionnaire(questions);
+      if ("error" in result) { setError(result.error); return; }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    });
+  };
+
+  return (
+    <SectionCard
+      title="Client questionnaire"
+      description="Asked once per client at onboarding — you record the answers on the client's page, and the AI reads them as stable context on every check-in. Deleting a question immediately stops its stored answers from reaching the AI."
+    >
+      <div className="space-y-2">
+        {questions.length === 0 && (
+          <p className="py-2 text-[13px] text-muted-2">
+            No questions — new clients get no background questionnaire. Restore the defaults below to start again.
+          </p>
+        )}
+        {questions.map((q, i) => (
+          <div
+            key={q.id}
+            className="flex items-center gap-3 rounded-[10px] border border-hair-2 bg-bg px-3.5 py-2.5"
+          >
+            <div className="flex shrink-0 flex-col">
+              <button
+                type="button" aria-label="Move up" disabled={i === 0 || isPending}
+                onClick={() => move(i, -1)}
+                className="rounded p-0.5 text-muted-2 transition-colors hover:text-text disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring"
+              >
+                <ArrowUp className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button" aria-label="Move down" disabled={i === questions.length - 1 || isPending}
+                onClick={() => move(i, 1)}
+                className="rounded p-0.5 text-muted-2 transition-colors hover:text-text disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring"
+              >
+                <ArrowDown className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm text-text">{q.label}</p>
+              <p className="text-[11.5px] text-muted-2">
+                {q.type === "select" ? `single-select · ${(q.options ?? []).join(" / ")}` : q.type === "number" ? "number" : "short text"}
+              </p>
+            </div>
+            <button
+              type="button" aria-label={`Remove "${q.label}"`} disabled={isPending}
+              onClick={() => remove(i)}
+              className="shrink-0 rounded p-1 text-muted-2 transition-colors hover:text-red focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Add a question */}
+      <div className="mt-4 space-y-3 border-t border-hair pt-4">
+        <div className="grid gap-3 sm:grid-cols-[1fr_150px]">
+          <div>
+            <label htmlFor="new-question-label" className={LABEL}>New question</label>
+            <input
+              id="new-question-label" type="text" maxLength={MAX_QUESTION_LABEL}
+              placeholder="e.g. How many hours a week do you commute?"
+              value={newLabel} onChange={(e) => setNewLabel(e.target.value)}
+              disabled={isPending} className={INPUT}
+            />
+          </div>
+          <div>
+            <label htmlFor="new-question-type" className={LABEL}>Type</label>
+            <select
+              id="new-question-type" value={newType}
+              onChange={(e) => setNewType(e.target.value as QuestionType)}
+              disabled={isPending} className={cn(INPUT, "cursor-pointer")}
+            >
+              <option value="text">Short text</option>
+              <option value="number">Number</option>
+              <option value="select">Single-select</option>
+            </select>
+          </div>
+        </div>
+        {newType === "select" && (
+          <div>
+            <label htmlFor="new-question-options" className={LABEL}>Options (comma-separated)</label>
+            <input
+              id="new-question-options" type="text"
+              placeholder="e.g. Rarely, Sometimes, Often"
+              value={newOptions} onChange={(e) => setNewOptions(e.target.value)}
+              disabled={isPending} className={INPUT}
+            />
+          </div>
+        )}
+        <button
+          type="button" onClick={add} disabled={isPending}
+          className={buttonClass({ variant: "secondary", size: "md" })}
+        >
+          <Plus className="h-4 w-4" /> Add question
+        </button>
+      </div>
+
+      {error && (
+        <p className="mt-3 text-xs text-red">{error}</p>
+      )}
+
+      <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-hair pt-4">
+        <button
+          type="button" onClick={save} disabled={isPending}
+          className={buttonClass({ size: "md" })}
+        >
+          {isPending ? (<><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>) : "Save questionnaire"}
+        </button>
+        <button
+          type="button" disabled={isPending}
+          onClick={() => { setQuestions(DEFAULT_QUESTIONS); setError(null); }}
+          className={buttonClass({ variant: "secondary", size: "md" })}
+        >
+          Restore defaults
+        </button>
+        <AutoSaveIndicator visible={saved} />
+      </div>
+    </SectionCard>
+  );
+}
+
+function CopilotTab({ initialQuestions }: { initialQuestions: CoachQuestion[] }) {
   const [autonomy, setAutonomy] = useState<AutonomyLevel>("max");
   const [style, setStyle] = useState<ResponseStyle>("technical");
   const [apiKeyCopied, setApiKeyCopied] = useState(false);
@@ -424,7 +605,11 @@ function CopilotTab() {
 
   return (
     <div className="space-y-6">
-      <ComingSoonBanner message="These settings preview future AI controls — selections are not yet applied to analysis." />
+      {/* LIVE: the questionnaire manager is real and applied — it sits above
+          the coming-soon banner so the banner only covers the mock dials. */}
+      <QuestionnaireSection initialQuestions={initialQuestions} />
+
+      <ComingSoonBanner message="The settings below preview future AI controls — selections are not yet applied to analysis." />
 
       {/* Autonomy Level */}
       <SectionCard
@@ -760,7 +945,7 @@ const TABS: {
 
 // ── Client shell ──────────────────────────────────────────────────────────────
 
-export function SettingsClient({ initialProfile, isAdmin }: { initialProfile: CoachProfile; isAdmin: boolean }) {
+export function SettingsClient({ initialProfile, isAdmin, initialQuestions }: { initialProfile: CoachProfile; isAdmin: boolean; initialQuestions: CoachQuestion[] }) {
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
 
   return (
@@ -834,7 +1019,7 @@ export function SettingsClient({ initialProfile, isAdmin }: { initialProfile: Co
               </div>
 
               {activeTab === "general"       && <GeneralTab initialProfile={initialProfile} isAdmin={isAdmin} />}
-              {activeTab === "copilot"       && <CopilotTab />}
+              {activeTab === "copilot"       && <CopilotTab initialQuestions={initialQuestions} />}
               {activeTab === "billing"       && <BillingTab />}
               {activeTab === "notifications" && <NotificationsTab />}
             </div>
