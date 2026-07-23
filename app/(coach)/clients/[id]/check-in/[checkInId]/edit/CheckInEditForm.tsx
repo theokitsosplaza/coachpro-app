@@ -27,6 +27,10 @@ type Props = {
   clientName: string
   checkIn: CheckInValues
   wasApproved: boolean
+  // False ONLY when Sex is explicitly Male AND this check-in doesn't already
+  // carry the flag (an existing flag keeps the control visible so saving the
+  // form can never silently clear it).
+  showCycleFlag: boolean
 }
 
 function FieldError({ msg }: { msg?: string }) {
@@ -52,7 +56,7 @@ function toDayInputValue(d: Date): string {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
 }
 
-export function CheckInEditForm({ clientId, clientName, checkIn, wasApproved }: Props) {
+export function CheckInEditForm({ clientId, clientName, checkIn, wasApproved, showCycleFlag }: Props) {
   const boundAction = updateCoachCheckIn.bind(null, clientId, checkIn.id);
   const [errors, action, isPending] = useActionState<CheckInFormErrors, FormData>(
     boundAction,
@@ -302,25 +306,28 @@ export function CheckInEditForm({ clientId, clientName, checkIn, wasApproved }: 
           </div>
         </details>
 
-        {/* ── Cycle flag ────────────────────────────────────────── */}
-        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-hair bg-surface px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-colors hover:bg-white/[0.02]">
-          <input
-            type="checkbox"
-            name="cycleAffected"
-            value="on"
-            defaultChecked={checkIn.cycleAffected}
-            disabled={isPending}
-            className="mt-0.5 h-4 w-4 cursor-pointer rounded accent-[var(--accent)]"
-          />
-          <div>
-            <p className="text-sm font-medium text-text">
-              Weight may be affected by menstrual cycle this week
-            </p>
-            <p className="mt-0.5 text-xs text-muted-2">
-              Suppresses weight-based verdicts for this check-in. Other signals (adherence, fatigue) still report normally.
-            </p>
-          </div>
-        </label>
+        {/* ── Cycle flag (hidden only when Sex is explicitly Male and the
+            flag isn't already set on this check-in) ─────────────── */}
+        {showCycleFlag && (
+          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-hair bg-surface px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-colors hover:bg-white/[0.02]">
+            <input
+              type="checkbox"
+              name="cycleAffected"
+              value="on"
+              defaultChecked={checkIn.cycleAffected}
+              disabled={isPending}
+              className="mt-0.5 h-4 w-4 cursor-pointer rounded accent-[var(--accent)]"
+            />
+            <div>
+              <p className="text-sm font-medium text-text">
+                Weight may be affected by menstrual cycle this week
+              </p>
+              <p className="mt-0.5 text-xs text-muted-2">
+                Suppresses weight-based verdicts for this check-in. Other signals (adherence, fatigue) still report normally.
+              </p>
+            </div>
+          </label>
+        )}
 
         {/* ── Submit ────────────────────────────────────────────── */}
         <button

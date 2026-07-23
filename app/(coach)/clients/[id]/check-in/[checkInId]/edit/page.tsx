@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import { verifyCoachSession } from '@/lib/dal'
 import { CHECK_IN_STATUS } from '@/lib/check-in-status'
+import { parseCoachQuestions, parseAnswerSet, isExplicitlyMale } from '@/lib/questionnaire'
 import { CheckInEditForm } from './CheckInEditForm'
 
 export default async function EditCheckInPage({
@@ -14,7 +15,7 @@ export default async function EditCheckInPage({
 
   const client = await prisma.client.findUnique({
     where: { id: clientId, coachId: coach.id },
-    select: { id: true, name: true },
+    select: { id: true, name: true, questionnaireAnswers: true },
   })
   if (!client) notFound()
 
@@ -39,10 +40,20 @@ export default async function EditCheckInPage({
 
   if (!checkIn || checkIn.clientId !== clientId) notFound()
 
+  // Hidden only when Sex is explicitly Male — EXCEPT when this check-in
+  // already has the flag set: hiding the control then would silently clear
+  // cycleAffected on save. The coach keeps the ability to see and unset it.
+  const showCycleFlag =
+    !isExplicitlyMale(
+      parseCoachQuestions(coach.questionnaire),
+      parseAnswerSet(client.questionnaireAnswers),
+    ) || checkIn.cycleAffected
+
   return (
     <CheckInEditForm
       clientId={clientId}
       clientName={client.name}
+      showCycleFlag={showCycleFlag}
       checkIn={checkIn}
       wasApproved={checkIn.status === CHECK_IN_STATUS.Approved}
     />

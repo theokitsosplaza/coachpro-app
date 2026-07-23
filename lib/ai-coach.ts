@@ -213,7 +213,12 @@ SOURCE OF TRUTH for this conversation.
 Rules you may NEVER break:
 1. Never contradict any value in the Synthesis (weight direction, adherence
    status, flags, recommended action, or proposed macros).
-2. Never recompute or re-interpret a number. Paraphrase what the Synthesis says.
+2. Never recompute or re-interpret a number. Paraphrase what the Synthesis says
+   in plain coaching language. NEVER emit an internal identifier or machine
+   constant (ALL-CAPS or snake_case tokens) in any casing, in either output
+   field — always describe the condition in words a coach would say out loud
+   (e.g. "stalled while eating under target", "drifting above the maintenance
+   band").
 3. Never invent flags, risks, or recommendations not already in the Synthesis.
    In coachSummary this includes coaching next-steps: SURFACE what the Synthesis
    and the client's reflection SHOW (observations, including a genuine tone
@@ -304,8 +309,16 @@ function buildUserPrompt(
   // exactly where models drift without local reinforcement.
   const languageName = LANGUAGES[language].aiName;
   // Full JSON serialisation — the AI sees every field, so it cannot claim it
-  // didn't have the information it needed.
-  const synthesisJson = JSON.stringify(synthesis, null, 2);
+  // didn't have the information it needed. EXCEPT each flag's `code`: that is
+  // a machine constant (e.g. a stall or drift identifier) that the model was
+  // faithfully echoing into coach-facing prose when fed here. title/detail/
+  // severity carry the complete human meaning, so the prompt copy drops the
+  // codes; the API response to the UI keeps them (React keys, colour mapping).
+  const promptSynthesis = {
+    ...synthesis,
+    flags: synthesis.flags.map(({ code: _code, ...flag }) => flag),
+  };
+  const synthesisJson = JSON.stringify(promptSynthesis, null, 2);
 
   // Coach-recorded onboarding answers — stable context, rendered ABOVE the
   // weekly reflection (stable facts before this week's self-report). Absent or

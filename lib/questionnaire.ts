@@ -343,6 +343,23 @@ export function visibleAnswers(
 }
 
 /**
+ * True ONLY when the client's questionnaire explicitly answers the default
+ * Sex question (stable id 'sex') as Male — through the purge-aware
+ * visibleAnswers view, so a deleted Sex question reads as "unknown".
+ * Used to hide the menstrual-cycle checkbox on the coach check-in forms:
+ * absent/unfilled/unknown MUST fail open (render the control as before) —
+ * most clients have no questionnaire yet, and silently removing the control
+ * for them would be a regression. Case tolerance only; no fuzzy matching.
+ */
+export function isExplicitlyMale(
+  questions: CoachQuestion[],
+  answerSet: AnswerSet | null,
+): boolean {
+  const sex = visibleAnswers(questions, answerSet).find((a) => a.questionId === 'sex')
+  return sex?.value.trim().toLowerCase() === 'male'
+}
+
+/**
  * The exact string handed to lib/ai-coach.ts as questionnaireContext.
  * Empty string ⇒ the AI layer omits the background block and clause entirely,
  * keeping no-questionnaire prompts byte-for-byte identical to before this
