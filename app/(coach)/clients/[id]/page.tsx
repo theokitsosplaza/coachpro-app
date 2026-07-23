@@ -131,6 +131,21 @@ function WeightChart({ checkIns }: { checkIns: Array<{ date: Date; weight: numbe
 
   const endDot = pts[n - 1]
 
+  // Total change since the FIRST check-in on file — a context figure only.
+  // Every verdict still comes from the engine's 28-day least-squares trend;
+  // the caveat line under the figure says so explicitly. Rounded before the
+  // sign is read so a -0.04 kg drift renders as "No change", not "-0.0".
+  // Only reached when n >= 2 (the single-check-in early return above), so a
+  // meaningless "0.0 kg since <today>" can never render for a new client.
+  const totalDeltaKg = Number((sorted[n - 1].weight - sorted[0].weight).toFixed(1))
+  const firstDateLabel = sorted[0].date.toLocaleDateString('en-GB', {
+    day: 'numeric', month: 'long', year: 'numeric',
+  })
+  const totalChangeLabel =
+    totalDeltaKg === 0
+      ? `No change since the first check-in on ${firstDateLabel}`
+      : `${totalDeltaKg < 0 ? 'Down' : 'Up'} ${Math.abs(totalDeltaKg).toFixed(1)} kg since the first check-in on ${firstDateLabel}`
+
   return (
     <div className={cn(CARD, 'mb-4 p-[22px]')}>
       <div className="mb-1.5 flex items-center gap-2.5">
@@ -189,6 +204,14 @@ function WeightChart({ checkIns }: { checkIns: Array<{ date: Date; weight: numbe
       <div className="mt-1.5 flex justify-between font-mono text-[11px] font-semibold text-muted-2">
         <span>{minW.toFixed(1)} kg</span>
         <span>{maxW.toFixed(1)} kg</span>
+      </div>
+
+      {/* All-time weight context — display only, never a verdict input */}
+      <div className="mt-3 border-t border-hair pt-3">
+        <p className="text-sm font-medium text-text">{totalChangeLabel}</p>
+        <p className="mt-0.5 text-xs text-muted-2">
+          Context only — the weekly recommendation is based on the 28-day trend, not this figure.
+        </p>
       </div>
     </div>
   )

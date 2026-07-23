@@ -202,6 +202,15 @@ export async function GET(request: Request) {
       // since-last-check-in delta. Always present: the < 2 check-ins guard
       // above means `previous` always exists.
       previousWeight: previous.weight,
+      // The FIRST check-in on file (earliest by date) — powers the all-time
+      // "since first check-in" context line in the UI. Display-only: the
+      // engine never reads it and no verdict derives from it. Always present
+      // (the >= 2 guard above). checkIns[0] is earliest — the query orders
+      // ascending with an id tie-break.
+      firstCheckIn: {
+        date:   row.checkIns[0].date,
+        weight: row.checkIns[0].weight,
+      },
       synthesis: responseSynthesis,
       aiOutput,
     });

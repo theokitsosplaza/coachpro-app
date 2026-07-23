@@ -75,6 +75,9 @@ type AnalysisResult = {
   // (it requires >= 2 check-ins before analysing), and used only for the
   // one-period kg delta on the weight tile.
   previousWeight: number;
+  // The earliest check-in on file — the all-time "since first check-in"
+  // context line under the insight tiles. Display-only; never a verdict input.
+  firstCheckIn: { date: string; weight: number };
   synthesis: {
     triage: "red" | "yellow" | "green" | "grey";
     weight: {
@@ -499,7 +502,7 @@ function AnalysisPanel({
   approving: boolean;
   approved: boolean;
 }) {
-  const { clientInput, latestCheckIn, previousWeight, synthesis, aiOutput } = data;
+  const { clientInput, latestCheckIn, previousWeight, firstCheckIn, synthesis, aiOutput } = data;
   const { recommendation, flags, weight, adherence } = synthesis;
 
   // Editable macro state — pre-filled from AI proposal or current targets on manual open
@@ -543,6 +546,20 @@ function AnalysisPanel({
   // artefact cannot surface as "69.69999999 kg", and so a whole number stays
   // whole ("80 kg now", not "80.0 kg now").
   const weightNowLabel = `${Number(latestCheckIn.weight.toFixed(1))} kg now`;
+
+  // All-time context: change since the client's FIRST check-in. Deliberately
+  // separate from the tile (whose delta is one-period) and from every verdict —
+  // the caveat line rendered with it says so explicitly. Same -0.0 guard as
+  // weightDeltaKg above.
+  const totalDeltaKg = Number((latestCheckIn.weight - firstCheckIn.weight).toFixed(1));
+  const firstCheckInDateLabel = new Date(firstCheckIn.date).toLocaleDateString("en-GB", {
+    day: "numeric", month: "long", year: "numeric",
+  });
+  const totalChangeLabel =
+    totalDeltaKg === 0
+      ? `No change since the first check-in on ${firstCheckInDateLabel}`
+      : `${totalDeltaKg < 0 ? "Down" : "Up"} ${Math.abs(totalDeltaKg).toFixed(1)} kg since the first check-in on ${firstCheckInDateLabel}`;
+
   const guidance = ACTION_GUIDANCE[recommendation.action] ?? ACTION_GUIDANCE["hold"];
   const isReview = recommendation.action === "review";
 
@@ -649,6 +666,14 @@ function AnalysisPanel({
               color={adherenceColor(adherence.status)}
               icon={BarChart3}
             />
+          </div>
+
+          {/* All-time weight context — display only, never a verdict input */}
+          <div>
+            <p className="text-sm font-medium text-text">{totalChangeLabel}</p>
+            <p className="mt-0.5 text-xs text-muted-2">
+              Context only — the weekly recommendation is based on the 28-day trend, not this figure.
+            </p>
           </div>
 
           {/* Safety / warning flags (if any) */}
