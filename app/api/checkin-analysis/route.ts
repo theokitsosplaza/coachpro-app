@@ -3,7 +3,15 @@ import { prisma } from '@/lib/prisma';
 import { analyzeClient, rationaleForFinalWarnings, type ClientInput, type CheckInInput } from '@/lib/coach-engine';
 import { generateCoachOutput, type AiCoachOutput } from '@/lib/ai-coach';
 import { appendAttentionFlag, parseAttentionSignal } from '@/lib/attention-flag';
-import { parseCoachQuestions, parseAnswerSet, renderQuestionnaireContext } from '@/lib/questionnaire';
+import {
+  parseCoachQuestions,
+  parseAnswerSet,
+  renderQuestionnaireContext,
+  visibleAnswers,
+  parseProposals,
+  parseResolutions,
+  filterValidProposals,
+} from '@/lib/questionnaire';
 import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic'
@@ -129,6 +137,10 @@ export async function GET(request: Request) {
     // the check-in is edited (see updateCoachCheckIn action).
     let aiOutput: AiCoachOutput | null = null;
 
+    // Parsed once — feeds the AI context, proposal validation, and rendering.
+    const coachQuestions = parseCoachQuestions(coach.questionnaire);
+    const clientAnswers  = parseAnswerSet(row.questionnaireAnswers);
+
     if (latest.aiSynthesis) {
       try {
         const cached = JSON.parse(latest.aiSynthesis) as Record<string, unknown>;
@@ -137,6 +149,10 @@ export async function GET(request: Request) {
             coachSummary:  cached.coachSummary,
             clientMessage: cached.clientMessage,
             attention:     parseAttentionSignal(cached.attention),
+            // Older caches lack the key — parses to []. Resolution filtering
+            // below re-applies on every read (resolutions can grow after the
+            // cache was written).
+            profileUpdateProposals: parseProposals(cached.profileUpdateProposals),
           };
         }
       } catch (err) {
@@ -149,9 +165,17 @@ export async function GET(request: Request) {
       // from data the engine never sees, and passed alongside the reflections.
       // Purge-on-delete: only answers to the coach's CURRENT questions are
       // included. Empty string ⇒ the AI layer omits it entirely.
+      // Bracketed question ids are included ONLY when a profile-update
+      // proposal is possible (stored answers + this-week text) — the same
+      // gate generateCoachOutput derives internally — so ineligible prompts
+      // stay byte-identical.
+      const canPropose =
+        visibleAnswers(coachQuestions, clientAnswers).length > 0 &&
+        Boolean(latest.clientReflection.trim() || latest.changeNote?.trim());
       const questionnaireContext = renderQuestionnaireContext(
-        parseCoachQuestions(coach.questionnaire),
-        parseAnswerSet(row.questionnaireAnswers),
+        coachQuestions,
+        clientAnswers,
+        canPropose,
       );
 
       // Pass this week's + last week's free-text reflections as tone-only context.
@@ -185,6 +209,19 @@ export async function GET(request: Request) {
     // nudges triage to yellow (see app/triage/page.tsx). We also re-express the
     // on-track rationale for the FINAL warning count so the recommendation box
     // never reads "no issues" while the attention flag card is showing.
+    // ---- 5b. Server-validate profile-update proposals ---------------------
+    // The ONLY path proposals take to the UI: filtered to currently-visible
+    // questions (deleted ⇒ dropped), unresolved on this check-in, type-valid;
+    // oldValue read from the CURRENT stored snapshot — never the AI's claim,
+    // never a cached copy — so the card always shows exactly what the accept
+    // handler will validate against.
+    const profileProposals = filterValidProposals(
+      aiOutput.profileUpdateProposals,
+      coachQuestions,
+      clientAnswers,
+      parseResolutions(latest.proposalResolutions),
+    );
+
     const finalFlags = appendAttentionFlag(synthesis.flags, aiOutput?.attention);
     const engineWarnings = synthesis.flags.filter((f) => f.severity === 'warning').length;
     const finalWarnings  = finalFlags.filter((f) => f.severity === 'warning').length;
@@ -230,6 +267,7 @@ export async function GET(request: Request) {
       },
       synthesis: responseSynthesis,
       aiOutput,
+      profileProposals,
     });
 
   } catch (error) {

@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 import { CHECK_IN_STATUS } from '@/lib/check-in-status';
 import { parseAttentionSignal } from '@/lib/attention-flag';
+import { parseProposals, parseResolutions } from '@/lib/questionnaire';
 
 export const dynamic = 'force-dynamic'
 
@@ -106,6 +108,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
+    // ── 5b. Expire unresolved profile-update proposals ─────────────────────
+    // Approval must not SILENTLY retire a pending proposal: an 'expired'
+    // resolution durably records that it existed and was still pending when
+    // the coach approved ('dismissed' would mean seen-and-rejected). Read from
+    // the cached analysis — the same source the UI displayed.
+    const priorResolutions = parseResolutions(existing.proposalResolutions);
+    let cachedProposals: ReturnType<typeof parseProposals> = [];
+    if (existing.aiSynthesis) {
+      try {
+        cachedProposals = parseProposals(
+          (JSON.parse(existing.aiSynthesis) as Record<string, unknown>).profileUpdateProposals,
+        );
+      } catch { /* malformed cache — nothing to expire */ }
+    }
+    const resolvedIds = new Set(priorResolutions.map((r) => r.questionId));
+    const expiredAt = new Date().toISOString();
+    const expired = cachedProposals
+      .filter((p) => !resolvedIds.has(p.questionId))
+      .map((p) => ({ questionId: p.questionId, resolution: 'expired' as const, at: expiredAt }));
+
     // ── 6. Atomic writes ───────────────────────────────────────────────────
     await prisma.$transaction(async (tx) => {
       // Always: mark check-in approved and persist AI text
@@ -118,6 +140,10 @@ export async function POST(request: Request) {
             attention,
           }),
           status: CHECK_IN_STATUS.Approved,
+          ...(expired.length > 0 && {
+            proposalResolutions:
+              [...priorResolutions, ...expired] as unknown as Prisma.InputJsonValue,
+          }),
         },
       });
 

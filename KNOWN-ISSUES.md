@@ -4,16 +4,19 @@ Recorded, deliberately not yet fixed. Remove entries when resolved.
 
 ## Clearing a weekly change note has no confirm guard
 
-**Recorded:** 2026-07-23 · **Status:** open, deliberate for now
+**Recorded:** 2026-07-23 · **Status:** RESOLVED BY DESIGN 2026-07-23 (part 3)
 
 The coach edit form's "Did anything change this week?" note
-(`CheckIn.changeNote`) can be cleared by emptying the textarea and saving —
-no confirmation, unlike the client-reflection clear guard. Deliberate today:
-the note is the coach's own text and trivially retypeable. This becomes a real
-risk once **AI-proposed profile updates** ship, because a change note may be
-the recorded trigger for a pending questionnaire-update proposal — silently
-clearing the note would orphan or invalidate the proposal's provenance. Add a
-guard (or make notes immutable-once-proposal-exists) as part of that ticket.
+(`CheckIn.changeNote`) can be cleared with no confirmation. The feared risk —
+that clearing a note would orphan a pending proposal's provenance once
+AI-proposed profile updates shipped — was closed structurally instead of with
+a guard: the `QuestionnaireChange` audit table snapshots the **evidence
+quote**, label, old/new values, and check-in date on every accepted proposal,
+so the audit trail is fully self-contained and survives note clearing,
+question edits, and even check-in deletion. Pending (unaccepted) proposals
+regenerate from the analysis or resolve via `proposalResolutions`; a cleared
+note simply means the next regeneration has less context — the coach's own
+choice. No guard needed.
 
 ## Editing an approved check-in destroys the approved AI client message (data loss)
 

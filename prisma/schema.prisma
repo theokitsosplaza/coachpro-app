@@ -57,9 +57,34 @@ model Client {
 
   // Relations
   programs      Program[]
-  workoutLogs   WorkoutLog[]   
+  workoutLogs   WorkoutLog[]
   checkIns      CheckIn[]
   macroHistory  MacroHistory[]
+  questionnaireChanges QuestionnaireChange[]
+}
+
+// Audit trail for coach-accepted AI profile-update proposals — the
+// MacroHistory pattern. Deliberately SELF-CONTAINED (labels, values, evidence
+// all snapshotted) and with NO FK to CheckIn: deleting a check-in, clearing a
+// change note, or editing a question must never erase or orphan the audit of
+// a change the coach accepted. Table added to prod via
+// prisma/add-proposal-tables.sql.
+model QuestionnaireChange {
+  id            String   @id @default(cuid())
+  clientId      String
+  checkInId     String   // plain string on purpose — see above
+  checkInDate   DateTime
+  questionId    String
+  questionLabel String
+  oldValue      String
+  newValue      String
+  evidence      String   // the quoted client/coach words that triggered it
+  source        String   // 'reflection' | 'changeNote'
+  changedAt     DateTime @default(now())
+
+  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
 }
 
 // 3. The Program (The Blueprint)
@@ -109,6 +134,14 @@ model CheckIn {
   // engine, never clientMessage. Column added to prod via
   // prisma/add-change-note-column.sql (surgical db execute, no push).
   changeNote    String?
+
+  // Resolutions of AI-proposed profile updates for THIS check-in:
+  // [{ questionId, resolution: 'accepted'|'dismissed'|'expired', at }].
+  // Keyed per check-in so a dismissal survives edit→regenerate cycles (the
+  // edit action nulls aiSynthesis but never touches this column), while a
+  // LATER check-in with fresh evidence may propose the same question again.
+  // Column added to prod via prisma/add-proposal-tables.sql.
+  proposalResolutions Json?
 
   aiSynthesis   String?
   status        String   @default("Pending")

@@ -192,6 +192,133 @@ export function validateQuestions(raw: unknown): ValidateQuestionsResult {
   return { ok: true, questions }
 }
 
+// ── AI-proposed profile updates (part 3) ──────────────────────────────────────
+
+export type ProposalSource = 'reflection' | 'changeNote'
+
+/** The raw shape the AI emits inside its JSON output (soft-parsed, capped). */
+export interface ProfileUpdateProposal {
+  questionId: string
+  proposedValue: string
+  evidence: string
+  source: ProposalSource
+}
+
+/** A proposal validated by the server and ready for the UI — oldValue always
+ *  read from the CURRENT stored snapshot (never from the AI or a cache), so
+ *  the card shows exactly what the accept handler will validate against. */
+export interface ValidatedProposal extends ProfileUpdateProposal {
+  label: string    // the coach's CURRENT question label
+  oldValue: string // the CURRENT stored answer value
+}
+
+export type ProposalResolutionKind = 'accepted' | 'dismissed' | 'expired'
+export interface ProposalResolution {
+  questionId: string
+  resolution: ProposalResolutionKind
+  at: string // ISO
+}
+
+export const MAX_PROPOSALS_PER_CHECKIN = 2
+export const MAX_PROPOSAL_EVIDENCE_LENGTH = 240
+
+const PROPOSAL_SOURCES: readonly ProposalSource[] = ['reflection', 'changeNote'] as const
+const RESOLUTION_KINDS: readonly ProposalResolutionKind[] = ['accepted', 'dismissed', 'expired'] as const
+
+/** Soft-parse AI-emitted proposals: malformed entries drop, never throw. */
+export function parseProposals(raw: unknown): ProfileUpdateProposal[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((p: unknown): ProfileUpdateProposal | null => {
+      if (p == null || typeof p !== 'object') return null
+      const o = p as Record<string, unknown>
+      if (typeof o.questionId !== 'string' || !o.questionId.trim()) return null
+      if (typeof o.proposedValue !== 'string' || !o.proposedValue.trim()) return null
+      if (typeof o.evidence !== 'string') return null
+      if (typeof o.source !== 'string' || !(PROPOSAL_SOURCES as readonly string[]).includes(o.source)) return null
+      return {
+        questionId: o.questionId.trim(),
+        proposedValue: o.proposedValue.trim().slice(0, MAX_ANSWER_LENGTH),
+        evidence: o.evidence.trim().slice(0, MAX_PROPOSAL_EVIDENCE_LENGTH),
+        source: o.source as ProposalSource,
+      }
+    })
+    .filter((p): p is ProfileUpdateProposal => p !== null)
+    .slice(0, MAX_PROPOSALS_PER_CHECKIN)
+}
+
+/** Soft-parse CheckIn.proposalResolutions. */
+export function parseResolutions(raw: unknown): ProposalResolution[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((r: unknown): ProposalResolution | null => {
+      if (r == null || typeof r !== 'object') return null
+      const o = r as Record<string, unknown>
+      if (typeof o.questionId !== 'string' || !o.questionId) return null
+      if (typeof o.resolution !== 'string' || !(RESOLUTION_KINDS as readonly string[]).includes(o.resolution)) return null
+      return {
+        questionId: o.questionId,
+        resolution: o.resolution as ProposalResolutionKind,
+        at: typeof o.at === 'string' ? o.at : '',
+      }
+    })
+    .filter((r): r is ProposalResolution => r !== null)
+}
+
+/**
+ * Server-side validation — the ONLY path proposals take to the UI.
+ * Keeps a proposal iff:
+ *   - its question is currently VISIBLE (exists in the coach's current list
+ *     AND has a stored answer — the purge rule, so deleted questions can
+ *     never be proposed against),
+ *   - it is unresolved on this check-in,
+ *   - a select proposal names an offered option; a number proposal is numeric.
+ * Attaches the CURRENT question label and the CURRENT stored value as
+ * oldValue — never the AI's claim, never a cached copy.
+ */
+export function filterValidProposals(
+  proposals: ProfileUpdateProposal[],
+  questions: CoachQuestion[],
+  answerSet: AnswerSet | null,
+  resolutions: ProposalResolution[],
+): ValidatedProposal[] {
+  const resolved = new Set(resolutions.map((r) => r.questionId))
+  const questionById = new Map(questions.map((q) => [q.id, q]))
+  const answerById = new Map((answerSet?.answers ?? []).map((a) => [a.questionId, a]))
+  const out: ValidatedProposal[] = []
+  for (const p of proposals) {
+    if (resolved.has(p.questionId)) continue
+    const q = questionById.get(p.questionId)
+    const a = answerById.get(p.questionId)
+    if (!q || !a) continue // deleted or never answered — purge rule
+    let value = p.proposedValue
+    if (q.type === 'select') {
+      // CASE tolerance only: an exact match on the option text ignoring case,
+      // normalised to the canonical stored casing. Deliberately NO fuzzy,
+      // substring, or closest-option logic — a descriptive phrase must still
+      // be rejected.
+      const canonical = matchSelectOption(q, value)
+      if (!canonical) continue
+      value = canonical
+    }
+    if (q.type === 'number' && Number.isNaN(Number(value))) continue
+    if (value === a.value) continue // not a change
+    out.push({ ...p, proposedValue: value, label: q.label, oldValue: a.value })
+  }
+  return out
+}
+
+/**
+ * Case-insensitive EXACT match of a proposed value against a select question's
+ * offered options, returning the canonical stored casing — or null. This is
+ * the single matching rule for both display filtering and accept validation,
+ * so the two can never disagree. Nothing beyond case is tolerated.
+ */
+export function matchSelectOption(q: CoachQuestion, value: string): string | null {
+  const lower = value.toLowerCase()
+  return (q.options ?? []).find((o) => o.toLowerCase() === lower) ?? null
+}
+
 // ── Context rendering (the single path answers take to the AI) ────────────────
 
 /**
@@ -224,8 +351,27 @@ export function visibleAnswers(
 export function renderQuestionnaireContext(
   questions: CoachQuestion[],
   answerSet: AnswerSet | null,
+  // When the profile-update proposal clause is active, each line carries the
+  // question id in brackets — and, for single-select questions, the offered
+  // options, because the clause demands "EXACTLY one of the offered options"
+  // and the model cannot pick from a list it cannot see. When false, the
+  // rendering is byte-identical to before proposals existed.
+  includeIds = false,
 ): string {
-  return visibleAnswers(questions, answerSet)
-    .map((a) => `${a.label}: ${a.value}`)
-    .join('\n')
+  if (!answerSet) return ''
+  const byId = new Map(answerSet.answers.map((a) => [a.questionId, a]))
+  const lines: string[] = []
+  for (const q of questions) {
+    const a = byId.get(q.id)
+    if (!a) continue
+    if (includeIds) {
+      const opts = q.type === 'select' && q.options?.length
+        ? ` (options: ${q.options.join(' / ')})`
+        : ''
+      lines.push(`[${a.questionId}] ${a.label}: ${a.value}${opts}`)
+    } else {
+      lines.push(`${a.label}: ${a.value}`)
+    }
+  }
+  return lines.join('\n')
 }

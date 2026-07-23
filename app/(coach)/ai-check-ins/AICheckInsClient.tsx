@@ -26,6 +26,7 @@ import {
   Quote,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { buttonClass } from "@/components/ui/button";
 import { CHECK_IN_STATUS, type CheckInStatus } from "@/lib/check-in-status";
 import { attentionFlag, type AttentionSignal } from "@/lib/attention-flag";
 
@@ -80,6 +81,18 @@ type AnalysisResult = {
   // The earliest check-in on file — the all-time "since first check-in"
   // context line under the insight tiles. Display-only; never a verdict input.
   firstCheckIn: { date: string; weight: number };
+  // Server-validated AI profile-update proposals for this check-in: filtered
+  // to currently-visible questions and unresolved on this row; oldValue is
+  // ALWAYS the current stored answer (never the AI's claim), so the card shows
+  // exactly what the accept handler validates against. Usually [].
+  profileProposals: Array<{
+    questionId: string;
+    label: string;
+    oldValue: string;
+    proposedValue: string;
+    evidence: string;
+    source: "reflection" | "changeNote";
+  }>;
   synthesis: {
     triage: "red" | "yellow" | "green" | "grey";
     weight: {
@@ -449,6 +462,106 @@ function EmptyPanel() {
 // styling (the same surface/hair/muted language as EmptyPanel) rather than
 // ErrorPanel's red. ErrorPanel stays red for genuine faults: network drops,
 // 5xx, 403. Routing this case away from it keeps that signal meaningful.
+// ── AI-proposed profile updates ───────────────────────────────────────────────
+
+type ProfileProposal = AnalysisResult["profileProposals"][number];
+
+// Accept writes the new value + audit trail server-side; dismiss records a
+// per-check-in resolution and touches nothing else. Rows disappear locally as
+// they are resolved; the card hides once none remain. Renders nothing when
+// the analysis produced no (unresolved) proposals — the common case.
+function ProfileProposalsCard({ checkInId, proposals }: { checkInId: string; proposals: ProfileProposal[] }) {
+  const [resolved, setResolved] = useState<Record<string, "accepted" | "dismissed">>({});
+  const [busy, setBusy] = useState<string | null>(null);
+  const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
+
+  const visible = proposals.filter((p) => !resolved[p.questionId]);
+  if (visible.length === 0) return null;
+
+  async function act(p: ProfileProposal, action: "accept" | "dismiss") {
+    setBusy(p.questionId);
+    setRowErrors((prev) => ({ ...prev, [p.questionId]: "" }));
+    try {
+      const res = await fetch("/api/questionnaire-proposal", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          checkInId,
+          questionId: p.questionId,
+          action,
+          // Accept only: the value the coach is looking at — the server
+          // rejects if the stored answer changed underneath the card.
+          ...(action === "accept" && { expectedOldValue: p.oldValue }),
+        }),
+      });
+      const json = await res.json().catch(() => ({} as { error?: string }));
+      if (res.ok) {
+        setResolved((prev) => ({ ...prev, [p.questionId]: action === "accept" ? "accepted" : "dismissed" }));
+      } else {
+        setRowErrors((prev) => ({ ...prev, [p.questionId]: json.error ?? "Something went wrong." }));
+      }
+    } catch {
+      setRowErrors((prev) => ({ ...prev, [p.questionId]: "Network error — please try again." }));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <section aria-label="Proposed profile updates">
+      <div className="rounded-2xl border border-[color-mix(in_oklab,var(--accent)_22%,transparent)] bg-[color-mix(in_oklab,var(--accent)_6%,var(--surface))] p-[18px]">
+        <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-1">
+          Proposed profile updates
+        </p>
+        <p className="mb-3 text-xs text-muted-2">
+          This check-in appears to contradict a stored questionnaire answer.
+          Nothing is written unless you accept. Unresolved proposals expire when
+          the check-in is approved.
+        </p>
+        <div className="space-y-3">
+          {visible.map((p) => (
+            <div key={p.questionId} className="rounded-[10px] border border-hair-2 bg-bg px-4 py-3.5">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                <p className="text-sm font-bold text-text">{p.label}</p>
+                <span className="text-[10.5px] font-semibold uppercase tracking-[0.05em] text-muted-2">
+                  {p.source === "reflection" ? "client reflection" : "coach note"}
+                </span>
+              </div>
+              <p className="mt-1.5 font-mono text-[13px]">
+                <span className="text-muted-2 line-through">{p.oldValue}</span>
+                <span className="mx-2 text-muted-3">→</span>
+                <span className="font-semibold text-text">{p.proposedValue}</span>
+              </p>
+              <p className="mt-1.5 text-xs italic text-muted-1">&ldquo;{p.evidence}&rdquo;</p>
+              {rowErrors[p.questionId] && (
+                <p className="mt-2 text-xs text-red">{rowErrors[p.questionId]}</p>
+              )}
+              <div className="mt-3 flex items-center gap-2.5">
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => act(p, "accept")}
+                  className={buttonClass({ size: "sm" })}
+                >
+                  {busy === p.questionId ? "Working…" : "Accept update"}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => act(p, "dismiss")}
+                  className={buttonClass({ variant: "secondary", size: "sm" })}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Coach-recorded "change this week" note ────────────────────────────────────
 
 // Renders only when a note exists — the common no-note week shows nothing.
@@ -523,7 +636,7 @@ function AnalysisPanel({
   approving: boolean;
   approved: boolean;
 }) {
-  const { clientInput, latestCheckIn, previousWeight, firstCheckIn, synthesis, aiOutput } = data;
+  const { clientInput, latestCheckIn, previousWeight, firstCheckIn, synthesis, aiOutput, profileProposals } = data;
   const { recommendation, flags, weight, adherence } = synthesis;
 
   // Editable macro state — pre-filled from AI proposal or current targets on manual open
@@ -719,6 +832,11 @@ function AnalysisPanel({
               ))}
             </div>
           )}
+
+          {/* AI-proposed profile updates — beside the flags, next to the
+              evidence that triggered them (renders only when unresolved
+              proposals exist) */}
+          <ProfileProposalsCard checkInId={data.latestCheckInId} proposals={profileProposals} />
 
           {/* Coach-recorded change note (renders only when present) */}
           <ChangeNoteCard note={latestCheckIn.changeNote} />
