@@ -6,9 +6,6 @@ import {
   Sparkles,
   CreditCard,
   Bell,
-  Brain,
-  BarChart3,
-  EyeOff,
   Eye,
   Check,
   Copy,
@@ -27,7 +24,7 @@ import {
 } from "lucide-react";
 import { buttonClass } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { updateCoachProfile, inviteCoach, saveCoachQuestionnaire, type InviteCoachState } from "./actions";
+import { updateCoachProfile, inviteCoach, saveCoachQuestionnaire, saveCoachConfig, type InviteCoachState } from "./actions";
 import {
   DEFAULT_QUESTIONS,
   MIN_SELECT_OPTIONS,
@@ -36,12 +33,12 @@ import {
   type CoachQuestion,
   type QuestionType,
 } from "@/lib/questionnaire";
+import { type CoachConfig } from "@/lib/coach-config";
+import { LANGUAGES, type Language } from "@/lib/i18n/languages";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type SettingsTab = "general" | "copilot" | "billing" | "notifications";
-type AutonomyLevel = "max" | "synthesis" | "silent";
-type ResponseStyle = "technical" | "conversational";
 
 export type CoachProfile = {
   name: string;
@@ -164,6 +161,7 @@ function ComingSoonBanner({ message }: { message: string }) {
     </div>
   );
 }
+
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -359,59 +357,6 @@ function GeneralTab({ initialProfile, isAdmin }: { initialProfile: CoachProfile;
   );
 }
 
-// ── Tab: AI Copilot ───────────────────────────────────────────────────────────
-
-const AUTONOMY_OPTIONS: {
-  id: AutonomyLevel;
-  label: string;
-  icon: typeof Brain;
-  color: string;
-  border: string;
-  badge?: string;
-  description: string;
-  bullets: string[];
-}[] = [
-  {
-    id: "max",
-    label: "Max Assistance",
-    icon: Brain,
-    color: "text-accent-lite",
-    border: "border-accent",
-    badge: "Recommended",
-    description: "Full AI recommendations and automated plan generation.",
-    bullets: [
-      "Generates weekly plan updates automatically",
-      "Proactive coaching suggestions surfaced",
-      "AI drafts check-in responses",
-    ],
-  },
-  {
-    id: "synthesis",
-    label: "Data Synthesis Only",
-    icon: BarChart3,
-    color: "text-amber",
-    border: "border-amber",
-    description: "AI flags anomalies and surfaces patterns — no advice given.",
-    bullets: [
-      "Anomaly detection and trend analysis",
-      "Correlation reports (e.g., sleep vs. performance)",
-      "No recommendations or plan drafts",
-    ],
-  },
-  {
-    id: "silent",
-    label: "Silent Mode",
-    icon: EyeOff,
-    color: "text-muted-2",
-    border: "border-hair-2",
-    description: "AI operates in background. Alerts only for critical safety flags.",
-    bullets: [
-      "Critical churn-risk and safety alerts only",
-      "No analysis surfaced in the UI",
-      "Raw data available on demand",
-    ],
-  },
-];
 
 // ── Client questionnaire section (LIVE — not part of the mock dials below) ────
 
@@ -582,225 +527,88 @@ function QuestionnaireSection({ initialQuestions }: { initialQuestions: CoachQue
   );
 }
 
-function CopilotTab({ initialQuestions }: { initialQuestions: CoachQuestion[] }) {
-  const [autonomy, setAutonomy] = useState<AutonomyLevel>("max");
-  const [style, setStyle] = useState<ResponseStyle>("technical");
-  const [apiKeyCopied, setApiKeyCopied] = useState(false);
-  const [apiKeyRevealed, setApiKeyRevealed] = useState(false);
+function ConfigSection({ initialConfig }: { initialConfig: CoachConfig }) {
+  const [showMacros, setShowMacros] = useState(initialConfig.showMacros);
+  const [draftClientMessage, setDraftClientMessage] = useState(initialConfig.draftClientMessage);
+  const [defaultClientLanguage, setDefaultClientLanguage] = useState<Language>(initialConfig.defaultClientLanguage);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
-  const [contextToggles, setContextToggles] = useState({
-    biofeedback: true,
-    history: true,
-    macros: true,
-    workouts: true,
-  });
-
-  const toggleContext = (key: keyof typeof contextToggles) =>
-    setContextToggles((p) => ({ ...p, [key]: !p[key] }));
-
-  const handleCopyKey = () => {
-    setApiKeyCopied(true);
-    setTimeout(() => setApiKeyCopied(false), 2000);
+  const save = () => {
+    setError(null);
+    startTransition(async () => {
+      const result = await saveCoachConfig({ showMacros, draftClientMessage, defaultClientLanguage });
+      if ("error" in result) { setError(result.error); return; }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    });
   };
 
   return (
+    <SectionCard
+      title="AI configuration"
+      description="How the Copilot behaves for your clients. Saving re-runs pending analyses so a change takes effect immediately."
+    >
+      <div className="divide-y divide-hair">
+        <ToggleRow
+          label="Show macros & adherence"
+          description="Nutrition-compliance stats across your views, and macro/adherence language in the AI summary. Turn off if you coach training only."
+          checked={showMacros}
+          onChange={() => setShowMacros((v) => !v)}
+        />
+        <ToggleRow
+          label="Draft client messages"
+          description="Let the AI write a ready-to-send message for each client. Turn off to keep only the coach summary and the attention flag."
+          checked={draftClientMessage}
+          onChange={() => setDraftClientMessage((v) => !v)}
+        />
+      </div>
+
+      <div className="mt-4 border-t border-hair pt-4">
+        <label htmlFor="default-language" className={LABEL}>Default language for new clients</label>
+        <select
+          id="default-language"
+          value={defaultClientLanguage}
+          onChange={(e) => setDefaultClientLanguage(e.target.value as Language)}
+          disabled={isPending}
+          className={cn(INPUT, "max-w-[240px] cursor-pointer")}
+        >
+          {Object.entries(LANGUAGES).map(([code, { label }]) => (
+            <option key={code} value={code}>{label}</option>
+          ))}
+        </select>
+        <p className="mt-1.5 text-xs text-muted-2">
+          Applied only to clients you create from now on. Existing clients keep their language.
+        </p>
+      </div>
+
+      {error && <p className="mt-3 text-xs text-red">{error}</p>}
+
+      <div className="mt-4 flex items-center gap-3 border-t border-hair pt-4">
+        <button type="button" onClick={save} disabled={isPending} className={buttonClass({ size: "md" })}>
+          {isPending ? (<><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>) : "Save configuration"}
+        </button>
+        <AutoSaveIndicator visible={saved} />
+      </div>
+    </SectionCard>
+  );
+}
+
+function CopilotTab({
+  initialQuestions,
+  initialConfig,
+}: {
+  initialQuestions: CoachQuestion[];
+  initialConfig: CoachConfig;
+}) {
+  return (
     <div className="space-y-6">
-      {/* LIVE: the questionnaire manager is real and applied — it sits above
-          the coming-soon banner so the banner only covers the mock dials. */}
+      {/* LIVE: per-client questionnaire manager */}
       <QuestionnaireSection initialQuestions={initialQuestions} />
 
-      <ComingSoonBanner message="The settings below preview future AI controls — selections are not yet applied to analysis." />
-
-      {/* Autonomy Level */}
-      <SectionCard
-        title="Copilot Autonomy Level"
-        description="Control how much initiative the AI takes when analysing client data"
-      >
-        <div className="grid gap-4 sm:grid-cols-3">
-          {AUTONOMY_OPTIONS.map((opt) => {
-            const Icon = opt.icon;
-            const isSelected = autonomy === opt.id;
-            return (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => setAutonomy(opt.id)}
-                className={cn(
-                  "group relative flex flex-col rounded-2xl border-2 p-[18px] text-left transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring",
-                  isSelected
-                    ? `${opt.border} bg-white/[0.04]`
-                    : "border-hair bg-surface-deep hover:border-hair-2"
-                )}
-              >
-                {opt.badge && (
-                  <span className="absolute right-3.5 top-3.5 rounded-md bg-[color-mix(in_oklab,var(--accent)_20%,transparent)] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.06em] text-accent-lite">
-                    {opt.badge}
-                  </span>
-                )}
-                <div className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] bg-white/[0.06]">
-                  <Icon className={cn("h-[17px] w-[17px]", isSelected ? opt.color : "text-muted-2")} strokeWidth={1.9} />
-                </div>
-                <p className="mt-3 text-sm font-bold text-text">
-                  {opt.label}
-                </p>
-                <p className="mt-1 text-[12px] leading-relaxed text-muted-1">{opt.description}</p>
-                <ul className="mt-3 space-y-1.5">
-                  {opt.bullets.map((b) => (
-                    <li key={b} className="flex items-start gap-1.5 text-xs text-muted-1">
-                      <Check className={cn(
-                        "mt-px h-3 w-3 shrink-0",
-                        isSelected ? opt.color : "text-muted-3"
-                      )} />
-                      {b}
-                    </li>
-                  ))}
-                </ul>
-                {isSelected && (
-                  <div className={cn("mt-4 flex items-center gap-1.5 text-xs font-bold", opt.color)}>
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    Active
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </SectionCard>
-
-      {/* Context inputs */}
-      <SectionCard
-        title="Copilot Context"
-        description="Data sources the AI is allowed to use when generating analysis"
-      >
-        <div className="divide-y divide-hair">
-          <ToggleRow
-            label="Include biofeedback signals"
-            description="Sleep, stress, RPE and hunger data from check-ins"
-            checked={contextToggles.biofeedback}
-            onChange={() => toggleContext("biofeedback")}
-          />
-          <ToggleRow
-            label="Include check-in history"
-            description="Previous weeks used for trend detection and context"
-            checked={contextToggles.history}
-            onChange={() => toggleContext("history")}
-          />
-          <ToggleRow
-            label="Include macro compliance data"
-            description="Protein, carbs and fat targets vs actuals"
-            checked={contextToggles.macros}
-            onChange={() => toggleContext("macros")}
-          />
-          <ToggleRow
-            label="Include workout completion data"
-            description="Session attendance and missed training flags"
-            checked={contextToggles.workouts}
-            onChange={() => toggleContext("workouts")}
-          />
-        </div>
-      </SectionCard>
-
-      {/* Response style */}
-      <SectionCard
-        title="Response Style"
-        description="Tone used in AI-generated syntheses and recommendations"
-      >
-        <div className="grid gap-3 sm:grid-cols-2">
-          {(
-            [
-              {
-                id: "technical" as ResponseStyle,
-                icon: BarChart3,
-                label: "Technical",
-                sub: "Scientific language — terms like CNS fatigue, cortisol, TDEE, NEAT",
-              },
-              {
-                id: "conversational" as ResponseStyle,
-                icon: MessageSquare,
-                label: "Conversational",
-                sub: "Plain language summaries — accessible for client-facing communications",
-              },
-            ] as const
-          ).map(({ id, icon: Icon, label, sub }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setStyle(id)}
-              className={cn(
-                "flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring",
-                style === id
-                  ? "border-accent bg-[color-mix(in_oklab,var(--accent)_8%,transparent)]"
-                  : "border-hair bg-surface-deep hover:border-hair-2"
-              )}
-            >
-              <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", style === id ? "text-accent-lite" : "text-muted-2")} strokeWidth={2} />
-              <div>
-                <p className="text-sm font-bold text-text">
-                  {label}
-                </p>
-                <p className="mt-0.5 text-xs leading-relaxed text-muted-1">{sub}</p>
-              </div>
-              {style === id && (
-                <CheckCircle2 className="ml-auto h-4 w-4 shrink-0 text-accent-lite" />
-              )}
-            </button>
-          ))}
-        </div>
-      </SectionCard>
-
-      {/* API Access — Rotate button removed (fake action) */}
-      <SectionCard title="API Access" description="Private key for CoachAI Copilot v2.4 integration">
-        <div className="flex items-center gap-2">
-          <div className="flex h-11 flex-1 items-center overflow-hidden rounded-lg border border-hair-2 bg-surface-deep px-3.5">
-            <code className="block truncate font-mono text-sm tracking-widest text-muted-1">
-              {apiKeyRevealed
-                ? "cpai_live_a8f3k2x9mq7tz1vr4wd6jhne5lop0ys"
-                : "cpai_live_••••••••••••••••••••••••••••••••"}
-            </code>
-          </div>
-          <button
-            type="button"
-            onClick={() => setApiKeyRevealed((v) => !v)}
-            title={apiKeyRevealed ? "Hide key" : "Reveal key"}
-            className={cn(
-              "inline-flex h-11 w-11 items-center justify-center rounded-lg border transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring",
-              apiKeyRevealed
-                ? "border-[color-mix(in_oklab,var(--accent)_30%,transparent)] bg-[color-mix(in_oklab,var(--accent)_10%,transparent)] text-accent-lite"
-                : "border-hair-2 text-muted-2 hover:border-[color-mix(in_oklab,var(--accent)_30%,transparent)] hover:text-accent-lite"
-            )}
-          >
-            {apiKeyRevealed ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-          </button>
-          <button
-            type="button"
-            onClick={handleCopyKey}
-            className={cn(
-              "inline-flex h-11 items-center gap-1.5 rounded-lg border px-3.5 text-xs font-semibold transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring",
-              apiKeyCopied
-                ? "border-[color-mix(in_oklab,var(--green)_30%,transparent)] bg-[color-mix(in_oklab,var(--green)_12%,transparent)] text-green"
-                : "border-hair-2 text-muted-2 hover:border-[color-mix(in_oklab,var(--accent)_30%,transparent)] hover:text-accent-lite"
-            )}
-          >
-            {apiKeyCopied ? (
-              <><Check className="h-3.5 w-3.5" /> Copied</>
-            ) : (
-              <><Copy className="h-3.5 w-3.5" /> Copy</>
-            )}
-          </button>
-        </div>
-        <p className="mt-2 text-xs text-muted-2">
-          Generated 12 Feb 2026 · Never expires · Scope: read + write
-          {apiKeyRevealed && (
-            <span className="ml-2 font-semibold text-amber">
-              · Key visible — hide when done
-            </span>
-          )}
-        </p>
-      </SectionCard>
+      {/* LIVE: per-coach configuration dials */}
+      <ConfigSection initialConfig={initialConfig} />
     </div>
   );
 }
@@ -945,7 +753,7 @@ const TABS: {
 
 // ── Client shell ──────────────────────────────────────────────────────────────
 
-export function SettingsClient({ initialProfile, isAdmin, initialQuestions }: { initialProfile: CoachProfile; isAdmin: boolean; initialQuestions: CoachQuestion[] }) {
+export function SettingsClient({ initialProfile, isAdmin, initialQuestions, initialConfig }: { initialProfile: CoachProfile; isAdmin: boolean; initialQuestions: CoachQuestion[]; initialConfig: CoachConfig }) {
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
 
   return (
@@ -1019,7 +827,7 @@ export function SettingsClient({ initialProfile, isAdmin, initialQuestions }: { 
               </div>
 
               {activeTab === "general"       && <GeneralTab initialProfile={initialProfile} isAdmin={isAdmin} />}
-              {activeTab === "copilot"       && <CopilotTab initialQuestions={initialQuestions} />}
+              {activeTab === "copilot"       && <CopilotTab initialQuestions={initialQuestions} initialConfig={initialConfig} />}
               {activeTab === "billing"       && <BillingTab />}
               {activeTab === "notifications" && <NotificationsTab />}
             </div>

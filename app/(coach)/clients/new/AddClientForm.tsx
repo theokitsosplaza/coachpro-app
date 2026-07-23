@@ -26,6 +26,9 @@ export type ClientInitialValues = {
 
 type Props = {
   initialValues?: ClientInitialValues
+  // Coach's configured default language, used as the create-mode default only.
+  // On edit, initialValues.language wins, so existing clients are untouched.
+  defaultLanguage?: string
 }
 
 function FieldError({ msg }: { msg?: string }) {
@@ -66,7 +69,7 @@ function collectWarnings(form: HTMLFormElement): string[] {
   return ws;
 }
 
-export function AddClientForm({ initialValues }: Props) {
+export function AddClientForm({ initialValues, defaultLanguage }: Props) {
   const isEdit = !!initialValues;
 
   const boundAction = isEdit
@@ -95,7 +98,7 @@ export function AddClientForm({ initialValues }: Props) {
     targetFats:    v?.targetFats    ?? (initialValues ? String(initialValues.targetFats)     : ""),
     email:         v?.email         ?? initialValues?.email         ?? "",
     phone:         v?.phone         ?? initialValues?.phone         ?? "",
-    language:      v?.language      ?? initialValues?.language      ?? DEFAULT_LANGUAGE,
+    language:      v?.language      ?? initialValues?.language      ?? defaultLanguage ?? DEFAULT_LANGUAGE,
   };
 
   // Key forces input containers to remount (applying new defaultValues) when

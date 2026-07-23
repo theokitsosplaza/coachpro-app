@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { findAuthUserByEmail } from '@/lib/supabase/find-auth-user';
 import { validateQuestions } from '@/lib/questionnaire';
+import { mergeCoachConfig, type CoachConfig } from '@/lib/coach-config';
 import { CHECK_IN_STATUS } from '@/lib/check-in-status';
 
 // ── saveCoachQuestionnaire ────────────────────────────────────────────────────
@@ -125,6 +126,44 @@ export async function updateCoachProfile(fields: {
     }
     throw new Error('Something went wrong updating your profile. Please try again.');
   }
+}
+
+// ── saveCoachConfig ───────────────────────────────────────────────────────────
+
+export type SaveConfigState = { error: string } | { success: true }
+
+export async function saveCoachConfig(raw: unknown): Promise<SaveConfigState> {
+  const coach = await verifyCoachSession();
+
+  // Re-validate through the same soft-parse the read path uses, so a malformed
+  // client payload can never persist a bad shape — the stored value is always
+  // a clean, total CoachConfig.
+  const config: CoachConfig = mergeCoachConfig(raw);
+
+  try {
+    // showMacros and draftClientMessage both gate the PROMPT, so every cached
+    // aiSynthesis for this coach's clients was generated under the OLD config
+    // and is now stale. Clear non-approved caches for all of them in the SAME
+    // transaction (the questionnaire answers-write pattern): both writes land
+    // or neither does. Approved history stays frozen. (defaultClientLanguage
+    // doesn't affect existing analyses, but clearing unconditionally is simpler
+    // and always correct.)
+    await prisma.$transaction([
+      prisma.coach.update({
+        where: { id: coach.id },
+        data:  { config: config as unknown as Prisma.InputJsonValue },
+      }),
+      prisma.checkIn.updateMany({
+        where: { status: { not: CHECK_IN_STATUS.Approved }, client: { coachId: coach.id } },
+        data:  { aiSynthesis: null },
+      }),
+    ]);
+  } catch (err) {
+    console.error('[saveCoachConfig]', err);
+    return { error: 'Something went wrong saving your configuration. Please try again.' };
+  }
+
+  return { success: true };
 }
 
 // ── inviteCoach ───────────────────────────────────────────────────────────────

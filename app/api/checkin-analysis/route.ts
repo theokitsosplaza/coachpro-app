@@ -12,6 +12,7 @@ import {
   parseResolutions,
   filterValidProposals,
 } from '@/lib/questionnaire';
+import { mergeCoachConfig } from '@/lib/coach-config';
 import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic'
@@ -36,9 +37,11 @@ export async function GET(request: Request) {
 
   const coach = await prisma.coach.findUnique({
     where:  { authUserId: data.claims.sub },
-    // questionnaire: the coach's CURRENT question list — needed so deleted
-    // questions purge from the AI context immediately (see lib/questionnaire).
-    select: { id: true, questionnaire: true },
+    // questionnaire: the coach's CURRENT question list (deleted questions purge
+    // from the AI context immediately). config: per-coach dials that gate the
+    // prompt — showMacros (omit macro talk) and draftClientMessage (skip the
+    // client message field). See lib/questionnaire / lib/coach-config.
+    select: { id: true, questionnaire: true, config: true },
   });
   if (!coach) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -140,19 +143,27 @@ export async function GET(request: Request) {
     // Parsed once — feeds the AI context, proposal validation, and rendering.
     const coachQuestions = parseCoachQuestions(coach.questionnaire);
     const clientAnswers  = parseAnswerSet(row.questionnaireAnswers);
+    // Per-coach dials that gate the PROMPT (not just the UI): showMacros omits
+    // macro/adherence language from coachSummary; draftClientMessage off drops
+    // the client message entirely. Defaults ⇒ byte-identical prompts.
+    const { showMacros, draftClientMessage } = mergeCoachConfig(coach.config);
 
     if (latest.aiSynthesis) {
       try {
         const cached = JSON.parse(latest.aiSynthesis) as Record<string, unknown>;
-        if (typeof cached.coachSummary === 'string' && typeof cached.clientMessage === 'string') {
+        // clientMessage may be legitimately absent (draftClientMessage was off
+        // when this was cached); require only coachSummary to accept the cache.
+        if (typeof cached.coachSummary === 'string') {
           aiOutput = {
             coachSummary:  cached.coachSummary,
-            clientMessage: cached.clientMessage,
+            clientMessage: typeof cached.clientMessage === 'string' ? cached.clientMessage : '',
             attention:     parseAttentionSignal(cached.attention),
             // Older caches lack the key — parses to []. Resolution filtering
             // below re-applies on every read (resolutions can grow after the
             // cache was written).
             profileUpdateProposals: parseProposals(cached.profileUpdateProposals),
+            // A cached analysis is, by definition, a past genuine success.
+            generated: true,
           };
         }
       } catch (err) {
@@ -187,18 +198,26 @@ export async function GET(request: Request) {
         // This week's coach-recorded change note — latest check-in's only, by
         // design; older notes stay in history but never feed the AI.
         latest.changeNote ?? undefined,
+        showMacros, draftClientMessage,
       );
 
       // Cache ONLY a genuine success. generateCoachOutput never throws — on any
       // failure (rate limit, timeout, bad JSON, missing key) it returns a safe
-      // fallback with an empty clientMessage (see safeFallback in lib/ai-coach.ts).
-      // Persisting that would permanently serve "[AI unavailable]" and never
-      // retry, so on failure we leave aiSynthesis null and regenerate next open.
-      // The fallback is still returned below, so this view degrades gracefully.
-      if (aiOutput.clientMessage.trim().length > 0) {
+      // fallback with generated=false. We key caching on `generated`, NOT on a
+      // non-empty clientMessage: with draftClientMessage off a SUCCESS has an
+      // empty message and must still cache, while a failure (also empty) must
+      // never persist "[AI unavailable]". The persisted JSON is an explicit
+      // subset (no `generated`), so the stored shape is unchanged from before
+      // this dial existed.
+      if (aiOutput.generated) {
         await prisma.checkIn.update({
           where: { id: latest.id },
-          data:  { aiSynthesis: JSON.stringify(aiOutput) },
+          data:  { aiSynthesis: JSON.stringify({
+            coachSummary:            aiOutput.coachSummary,
+            clientMessage:           aiOutput.clientMessage,
+            attention:               aiOutput.attention,
+            profileUpdateProposals:  aiOutput.profileUpdateProposals,
+          }) },
         });
       }
     }

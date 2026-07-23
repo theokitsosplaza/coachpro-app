@@ -16,6 +16,12 @@ model Coach {
   businessName String?
   website      String?
   isAdmin      Boolean         @default(false)   // platform admin — gates inviteCoach
+  // Per-coach configuration bag (CoachConfig — see lib/coach-config.ts). Shape
+  // and defaults live in TS; null column / missing key / garbage all resolve
+  // to defaults. Column added to prod via prisma/add-coach-config-column.sql
+  // (surgical db execute, no push). NOTE: unrelated to the orphaned prod
+  // CoachConfig TABLE, which this feature deliberately does not touch.
+  config       Json?
   // Per-coach client questionnaire definitions (CoachQuestion[] — see
   // lib/questionnaire.ts). null ⇒ TS DEFAULT_QUESTIONS. Column added to prod
   // via prisma/add-questionnaire-columns.sql (surgical db execute, no push).

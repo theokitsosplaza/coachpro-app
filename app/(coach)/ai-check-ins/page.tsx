@@ -5,6 +5,7 @@
 import { prisma } from '@/lib/prisma';
 import { AICheckInsClient, type QueueClientData } from './AICheckInsClient';
 import { verifyCoachSession } from '@/lib/dal';
+import { mergeCoachConfig } from '@/lib/coach-config';
 import { CHECK_IN_STATUS } from '@/lib/check-in-status';
 import { parseAttentionSignal } from '@/lib/attention-flag';
 
@@ -16,6 +17,7 @@ function initials(name: string): string {
 
 export default async function AICheckInsPage() {
   const coach = await verifyCoachSession();
+  const { showMacros } = mergeCoachConfig(coach.config);
 
   let queueClients: QueueClientData[] = [];
 
@@ -93,5 +95,5 @@ export default async function AICheckInsPage() {
     console.error('[ai-check-ins page] DB error — rendering empty queue:', err);
   }
 
-  return <AICheckInsClient queueClients={queueClients} />;
+  return <AICheckInsClient queueClients={queueClients} showMacros={showMacros} />;
 }
