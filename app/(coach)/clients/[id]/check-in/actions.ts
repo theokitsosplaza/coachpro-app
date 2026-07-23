@@ -17,7 +17,7 @@ export async function createCheckIn(
   const result = validateCheckInFormData(formData)
   if (!result.ok) return result.errors
 
-  const { weight, loggedProtein, loggedCarbs, loggedFats, sleepScore, fatigueScore, cycleAffected } = result
+  const { weight, loggedProtein, loggedCarbs, loggedFats, sleepScore, fatigueScore, cycleAffected, clientReflection } = result
 
   // Verify the client belongs to the authenticated coach before writing.
   const client = await prisma.client.findUnique({
@@ -39,6 +39,7 @@ export async function createCheckIn(
         sleepScore,
         fatigueScore,
         cycleAffected,
+        clientReflection,
         status: CHECK_IN_STATUS.Pending,
       },
     })

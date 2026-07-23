@@ -34,6 +34,12 @@ const inputBase =
   "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent " +
   "disabled:opacity-50";
 
+const textareaBase =
+  "w-full rounded-lg border bg-background px-3 py-2.5 text-sm leading-relaxed text-foreground " +
+  "placeholder:text-muted-foreground/50 transition-colors resize-y min-h-[140px] " +
+  "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent " +
+  "disabled:opacity-50";
+
 export function CheckInForm({ clientId, clientName, lastCheckIn }: Props) {
   const boundAction = createCheckIn.bind(null, clientId);
   const [errors, action, isPending] = useActionState<CheckInFormErrors, FormData>(
@@ -160,6 +166,32 @@ export function CheckInForm({ clientId, clientName, lastCheckIn }: Props) {
               <p className="mt-1 text-xs text-muted-foreground">1 = fresh · 10 = exhausted</p>
               <FieldError msg={errors.fatigueScore} />
             </div>
+          </div>
+        </div>
+
+        {/* ── Client's reflection (optional transcription) ──────── */}
+        <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <div>
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
+              Client&apos;s reflection
+            </h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              The AI reads this for tone and attention signals. Leave blank if the
+              client gave no reflection — don&apos;t write one for them.
+            </p>
+          </div>
+          <div>
+            <label htmlFor="clientReflection" className="block text-sm font-medium text-foreground mb-1.5">
+              Paste or transcribe their own words{" "}
+              <span className="font-normal text-muted-foreground">(optional)</span>
+            </label>
+            <textarea
+              id="clientReflection" name="clientReflection" rows={6}
+              placeholder="e.g. their WhatsApp message or what they told you in person — in their words, not yours."
+              disabled={isPending}
+              className={cn(textareaBase, "border-border", errors.clientReflection && "border-anomaly focus:ring-anomaly/30")}
+            />
+            <FieldError msg={errors.clientReflection} />
           </div>
         </div>
 
