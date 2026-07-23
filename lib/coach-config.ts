@@ -19,6 +19,8 @@ import { toLanguage, type Language } from '@/lib/i18n/languages'
  * — no extra query.
  */
 
+export type SummaryStyle = 'detailed' | 'concise'
+
 export interface CoachConfig {
   /**
    * Presentation + narrative dial. When false, this coach's views hide the
@@ -41,12 +43,22 @@ export interface CoachConfig {
    * touches existing clients. One of the existing registry languages.
    */
   defaultClientLanguage: Language
+  /**
+   * coachSummary length dial. 'detailed' reproduces today's behaviour exactly.
+   * 'concise' compresses the NUMBERS half (trend, adherence, recommendation)
+   * to one clause while KEEPING the full explanation of anything derived from
+   * the client's reflection, the coach's change note, or a safety flag — the
+   * human signal is never shortened, and the attention flag's reason is
+   * untouched. Affects coachSummary only. See lib/ai-coach.ts.
+   */
+  summaryStyle: SummaryStyle
 }
 
 export const DEFAULT_COACH_CONFIG: CoachConfig = {
   showMacros: true,
   draftClientMessage: true,
   defaultClientLanguage: 'en',
+  summaryStyle: 'detailed',
 }
 
 /**
@@ -67,6 +79,9 @@ export function mergeCoachConfig(stored: unknown): CoachConfig {
     if (typeof s.defaultClientLanguage === 'string') {
       out.defaultClientLanguage = toLanguage(s.defaultClientLanguage)
     }
+    // Only 'concise' overrides the default; missing/garbage/'detailed' all stay
+    // 'detailed', so a malformed value can never silently shorten a summary.
+    if (s.summaryStyle === 'concise') out.summaryStyle = 'concise'
   }
   return out
 }

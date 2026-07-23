@@ -146,7 +146,7 @@ export async function GET(request: Request) {
     // Per-coach dials that gate the PROMPT (not just the UI): showMacros omits
     // macro/adherence language from coachSummary; draftClientMessage off drops
     // the client message entirely. Defaults ⇒ byte-identical prompts.
-    const { showMacros, draftClientMessage } = mergeCoachConfig(coach.config);
+    const { showMacros, draftClientMessage, summaryStyle } = mergeCoachConfig(coach.config);
 
     if (latest.aiSynthesis) {
       try {
@@ -198,7 +198,7 @@ export async function GET(request: Request) {
         // This week's coach-recorded change note — latest check-in's only, by
         // design; older notes stay in history but never feed the AI.
         latest.changeNote ?? undefined,
-        showMacros, draftClientMessage,
+        showMacros, draftClientMessage, summaryStyle,
       );
 
       // Cache ONLY a genuine success. generateCoachOutput never throws — on any

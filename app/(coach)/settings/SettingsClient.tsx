@@ -33,7 +33,7 @@ import {
   type CoachQuestion,
   type QuestionType,
 } from "@/lib/questionnaire";
-import { type CoachConfig } from "@/lib/coach-config";
+import { type CoachConfig, type SummaryStyle } from "@/lib/coach-config";
 import { LANGUAGES, type Language } from "@/lib/i18n/languages";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -531,6 +531,7 @@ function ConfigSection({ initialConfig }: { initialConfig: CoachConfig }) {
   const [showMacros, setShowMacros] = useState(initialConfig.showMacros);
   const [draftClientMessage, setDraftClientMessage] = useState(initialConfig.draftClientMessage);
   const [defaultClientLanguage, setDefaultClientLanguage] = useState<Language>(initialConfig.defaultClientLanguage);
+  const [summaryStyle, setSummaryStyle] = useState<SummaryStyle>(initialConfig.summaryStyle);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -538,7 +539,7 @@ function ConfigSection({ initialConfig }: { initialConfig: CoachConfig }) {
   const save = () => {
     setError(null);
     startTransition(async () => {
-      const result = await saveCoachConfig({ showMacros, draftClientMessage, defaultClientLanguage });
+      const result = await saveCoachConfig({ showMacros, draftClientMessage, defaultClientLanguage, summaryStyle });
       if ("error" in result) { setError(result.error); return; }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -580,6 +581,23 @@ function ConfigSection({ initialConfig }: { initialConfig: CoachConfig }) {
         </select>
         <p className="mt-1.5 text-xs text-muted-2">
           Applied only to clients you create from now on. Existing clients keep their language.
+        </p>
+      </div>
+
+      <div className="mt-4 border-t border-hair pt-4">
+        <label htmlFor="summary-style" className={LABEL}>AI summary length</label>
+        <select
+          id="summary-style"
+          value={summaryStyle}
+          onChange={(e) => setSummaryStyle(e.target.value as SummaryStyle)}
+          disabled={isPending}
+          className={cn(INPUT, "max-w-[240px] cursor-pointer")}
+        >
+          <option value="detailed">Detailed</option>
+          <option value="concise">Concise</option>
+        </select>
+        <p className="mt-1.5 text-xs text-muted-2">
+          Concise trims the numbers in each coach summary but always keeps the full explanation of what the client said.
         </p>
       </div>
 
