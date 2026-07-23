@@ -235,7 +235,7 @@ export default async function ClientProfilePage({
   const client = await prisma.client.findFirst({
     where: { id: clientId, coachId: coach.id },
     include: {
-      checkIns: { orderBy: { date: 'desc' } },
+      checkIns: { orderBy: [{ date: 'desc' }, { id: 'desc' }] },
     },
   })
 

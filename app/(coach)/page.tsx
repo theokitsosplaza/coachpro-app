@@ -29,7 +29,7 @@ export default async function DashboardPage() {
   // ── 1. All clients + check-ins (for triage engine) ────────────────────────
   const clients = await prisma.client.findMany({
     where: { coachId: coach.id, archivedAt: null },
-    include: { checkIns: { orderBy: { date: "asc" } } },
+    include: { checkIns: { orderBy: [{ date: "asc" }, { id: "asc" }] } },
   });
 
   // ── 2. Triage — same algorithm as app/triage/page.tsx, with one known gap:

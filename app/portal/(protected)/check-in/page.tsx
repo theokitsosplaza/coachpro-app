@@ -8,7 +8,7 @@ export default async function CheckInPage() {
 
   const lastCheckIn = await prisma.checkIn.findFirst({
     where: { clientId: client.id },
-    orderBy: { date: 'desc' },
+    orderBy: [{ date: 'desc' }, { id: 'desc' }],
     select: {
       weight: true,
       loggedProtein: true,

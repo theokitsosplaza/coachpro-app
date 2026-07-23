@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
-import { updateCoachCheckIn } from "./actions";
+import { updateCoachCheckIn, deleteCoachCheckIn } from "./actions";
 import type { CheckInFormErrors } from "@/lib/check-in-validation";
 import { buttonClass } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -45,12 +45,28 @@ const textareaBase =
   "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent " +
   "disabled:opacity-50";
 
+/** Local-time "YYYY-MM-DD" — matches the server-side calendar-day validation. */
+function toDayInputValue(d: Date): string {
+  const dt = new Date(d);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+}
+
 export function CheckInEditForm({ clientId, clientName, checkIn, wasApproved }: Props) {
   const boundAction = updateCoachCheckIn.bind(null, clientId, checkIn.id);
   const [errors, action, isPending] = useActionState<CheckInFormErrors, FormData>(
     boundAction,
     {},
   );
+
+  // Delete is its own form (forms cannot nest) with a two-step inline confirm:
+  // first click reveals the card naming the check-in's date; only the explicit
+  // second click submits the destructive action.
+  const boundDelete = deleteCoachCheckIn.bind(null, clientId, checkIn.id);
+  const [deleteErrors, deleteAction, isDeleting] = useActionState<CheckInFormErrors, FormData>(
+    boundDelete,
+    {},
+  );
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const formattedDate = new Date(checkIn.date).toLocaleDateString('en-GB', {
     day: 'numeric',
@@ -107,6 +123,31 @@ export function CheckInEditForm({ clientId, clientName, checkIn, wasApproved }: 
             {errors._form}
           </div>
         )}
+
+        {/* ── Check-in date ─────────────────────────────────────── */}
+        <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <div>
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
+              Check-in date
+            </h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Changing the date re-orders this client&apos;s history and re-runs the analysis.
+            </p>
+          </div>
+          <div className="max-w-[220px]">
+            <label htmlFor="date" className="block text-sm font-medium text-foreground mb-1.5">
+              Date <span className="text-anomaly">*</span>
+            </label>
+            <input
+              id="date" name="date" type="date"
+              min="2020-01-01" max={toDayInputValue(new Date())}
+              defaultValue={toDayInputValue(checkIn.date)}
+              disabled={isPending}
+              className={cn(inputBase, "border-border", errors.date && "border-anomaly focus:ring-anomaly/30")}
+            />
+            <FieldError msg={errors.date} />
+          </div>
+        </div>
 
         {/* ── Body Metrics ─────────────────────────────────────── */}
         <div className="rounded-xl border border-border bg-card p-6 space-y-4">
@@ -263,6 +304,71 @@ export function CheckInEditForm({ clientId, clientName, checkIn, wasApproved }: 
           )}
         </button>
       </form>
+
+      {/* ── Danger zone: delete (own form — forms cannot nest) ── */}
+      <div className="mt-8 rounded-xl border border-anomaly/25 bg-card p-6">
+        {!confirmingDelete ? (
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">Delete this check-in</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Permanently removes the {formattedDate} check-in.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(true)}
+              disabled={isPending || isDeleting}
+              className={buttonClass({ variant: "danger", size: "md" })}
+            >
+              Delete check-in…
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-anomaly">
+              Delete the check-in from {formattedDate}?
+            </p>
+            <p className="text-xs text-muted-foreground">
+              This permanently removes its numbers, the client&apos;s written
+              reflection, and its AI analysis. This cannot be undone.
+            </p>
+            {wasApproved && (
+              <p className="text-xs text-warning">
+                This check-in was approved — the client&apos;s current macro targets
+                may have been set from its analysis. Deleting it will NOT revert
+                those targets or the macro history.
+              </p>
+            )}
+            {deleteErrors._form && (
+              <p className="text-xs text-anomaly">{deleteErrors._form}</p>
+            )}
+            <div className="flex flex-wrap items-center gap-3">
+              <form action={deleteAction}>
+                <button
+                  type="submit"
+                  disabled={isDeleting}
+                  className={buttonClass({ variant: "danger", size: "md" })}
+                >
+                  {isDeleting ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Deleting…</>
+                  ) : (
+                    "Yes, delete it"
+                  )}
+                </button>
+              </form>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                disabled={isDeleting}
+                className={buttonClass({ variant: "secondary", size: "md" })}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

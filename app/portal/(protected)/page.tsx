@@ -165,7 +165,7 @@ export default async function PortalPage() {
   const [allCheckIns, latestMacros, latestApproved] = await Promise.all([
     prisma.checkIn.findMany({
       where: { clientId: client.id },
-      orderBy: { date: 'desc' },
+      orderBy: [{ date: 'desc' }, { id: 'desc' }],
       select: {
         id: true,
         date: true,
@@ -186,7 +186,7 @@ export default async function PortalPage() {
         status: CHECK_IN_STATUS.Approved,
         aiSynthesis: { not: null },
       },
-      orderBy: { date: 'desc' },
+      orderBy: [{ date: 'desc' }, { id: 'desc' }],
       select: { id: true, date: true, aiSynthesis: true },
     }),
   ])

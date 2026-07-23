@@ -444,14 +444,14 @@ function EmptyPanel() {
 // styling (the same surface/hair/muted language as EmptyPanel) rather than
 // ErrorPanel's red. ErrorPanel stays red for genuine faults: network drops,
 // 5xx, 403. Routing this case away from it keeps that signal meaningful.
-function NoDataPanel({ name }: { name: string }) {
+function NoDataPanel({ name, title = "No check-ins yet" }: { name: string; title?: string }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bg px-8 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-hair bg-surface">
         <Clock className="h-6 w-6 text-muted-2" />
       </div>
       <div>
-        <p className="text-sm font-bold text-text">No check-ins yet</p>
+        <p className="text-sm font-bold text-text">{title}</p>
         {/* One interpolated string rather than {name} followed by JSX text, so
             there are no adjacent text nodes whose separating space depends on
             JSX whitespace handling. Defensive only — the rendered output is
@@ -1170,6 +1170,10 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
   // setState synchronously (which would trigger a cascading render).
   const [loading, setLoading] = useState(autoFetchOnMount);
   const [error, setError] = useState<string | null>(null);
+  // The route's < 2 check-ins 400 (code INSUFFICIENT_DATA) is an ordinary
+  // state — a new client, or a coach deleted down to one check-in — so it
+  // renders as the neutral NoDataPanel, never the red ErrorPanel.
+  const [insufficientData, setInsufficientData] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [approving, setApproving] = useState(false);
   const [approved, setApproved] = useState(false);
@@ -1200,7 +1204,10 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
       .then(async (res) => ({ ok: res.ok, json: await res.json() }))
       .then(({ ok, json }) => {
         if (ignore) return;
-        if (!ok) setError(json.error ?? "An unexpected error occurred.");
+        if (!ok) {
+          if (json.code === 'INSUFFICIENT_DATA') setInsufficientData(true);
+          else setError(json.error ?? "An unexpected error occurred.");
+        }
         else setAnalysis(json as AnalysisResult);
       })
       .catch(() => {
@@ -1233,6 +1240,7 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
     // their saved analysis, so no AI call is made.
     const isApproved = client?.status === CHECK_IN_STATUS.Approved;
     setError(null);
+    setInsufficientData(false);
     setAnalysis(null);
     setApproved(false);
     setLoading(!isApproved);
@@ -1243,6 +1251,7 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
     setSelectedId(null);
     window.history.replaceState(null, '', '/ai-check-ins');
     setError(null);
+    setInsufficientData(false);
     setAnalysis(null);
     setApproved(false);
     setLoading(false);
@@ -1330,6 +1339,10 @@ export function AICheckInsClient({ queueClients }: { queueClients: QueueClientDa
             "Analysing… Running engine + Claude" for work that never happens. */}
         {selectedClient?.status === 'none' ? (
           <NoDataPanel name={selectedClient.name} />
+        ) : insufficientData ? (
+          // One check-in on file: the route 400s with INSUFFICIENT_DATA. Same
+          // neutral panel as zero check-ins, with a title that fits the count.
+          <NoDataPanel name={selectedClient?.name ?? "This client"} title="Not enough check-ins yet" />
         ) : loading ? (
           <LoadingPanel name={selectedClient?.name ?? "client"} />
         ) : error ? (

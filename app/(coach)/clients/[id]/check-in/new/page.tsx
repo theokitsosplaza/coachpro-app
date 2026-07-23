@@ -16,7 +16,7 @@ export default async function NewCheckInPage({
     where: { id, coachId: coach.id },
     include: {
       checkIns: {
-        orderBy: { date: 'desc' },
+        orderBy: [{ date: 'desc' }, { id: 'desc' }],
         take: 1,
       },
     },

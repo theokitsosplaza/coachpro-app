@@ -40,6 +40,11 @@ const textareaBase =
   "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent " +
   "disabled:opacity-50";
 
+/** Local-time "YYYY-MM-DD" — matches the server-side calendar-day validation. */
+function toDayInputValue(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export function CheckInForm({ clientId, clientName, lastCheckIn }: Props) {
   const boundAction = createCheckIn.bind(null, clientId);
   const [errors, action, isPending] = useActionState<CheckInFormErrors, FormData>(
@@ -73,6 +78,32 @@ export function CheckInForm({ clientId, clientName, lastCheckIn }: Props) {
             {errors._form}
           </div>
         )}
+
+        {/* ── Check-in date ─────────────────────────────────────── */}
+        <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <div>
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
+              Check-in date
+            </h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Defaults to today — pick a past date when logging an earlier week
+              (e.g. entering a client&apos;s history).
+            </p>
+          </div>
+          <div className="max-w-[220px]">
+            <label htmlFor="date" className="block text-sm font-medium text-foreground mb-1.5">
+              Date <span className="text-anomaly">*</span>
+            </label>
+            <input
+              id="date" name="date" type="date"
+              min="2020-01-01" max={toDayInputValue(new Date())}
+              defaultValue={toDayInputValue(new Date())}
+              disabled={isPending}
+              className={cn(inputBase, "border-border", errors.date && "border-anomaly focus:ring-anomaly/30")}
+            />
+            <FieldError msg={errors.date} />
+          </div>
+        </div>
 
         {/* ── Body Metrics ─────────────────────────────────────── */}
         <div className="rounded-xl border border-border bg-card p-6 space-y-4">

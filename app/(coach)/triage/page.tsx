@@ -28,7 +28,7 @@ export default async function TriagePage() {
     const clients = await prisma.client.findMany({
       where: { coachId: coach.id, archivedAt: null },
       include: {
-        checkIns: { orderBy: { date: 'asc' } },
+        checkIns: { orderBy: [{ date: 'asc' }, { id: 'asc' }] },
       },
       orderBy: { name: 'asc' },
     });

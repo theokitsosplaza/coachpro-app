@@ -25,7 +25,7 @@ export default async function AICheckInsPage() {
     const clients = await prisma.client.findMany({
       where: { coachId: coach.id, archivedAt: null },
       include: {
-        checkIns: { orderBy: { date: 'desc' }, take: 1 },
+        checkIns: { orderBy: [{ date: 'desc' }, { id: 'desc' }], take: 1 },
       },
       orderBy: { name: 'asc' },
     });

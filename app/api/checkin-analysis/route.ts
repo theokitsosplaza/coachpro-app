@@ -50,7 +50,9 @@ export async function GET(request: Request) {
     // the data chronologically (oldest → newest).
     const row = await prisma.client.findUnique({
       where: { id: clientId },
-      include: { checkIns: { orderBy: { date: 'asc' } } },
+      // id breaks exact-timestamp ties so "latest"/"previous" are deterministic
+      // (date alone left equal timestamps in undefined order).
+      include: { checkIns: { orderBy: [{ date: 'asc' }, { id: 'asc' }] } },
     });
 
     if (!row) {
@@ -65,9 +67,15 @@ export async function GET(request: Request) {
     }
 
     // The engine needs at least two points to fit a weight trend line.
+    // `code` lets the UI render this as a neutral not-enough-data state rather
+    // than a red error — it is an ordinary situation (new client, or a coach
+    // deleted down to one check-in), not a fault.
     if (row.checkIns.length < 2) {
       return NextResponse.json(
-        { error: 'This client needs at least 2 check-ins before an analysis can be generated.' },
+        {
+          error: 'This client needs at least 2 check-ins before an analysis can be generated.',
+          code: 'INSUFFICIENT_DATA',
+        },
         { status: 400 },
       );
     }

@@ -37,7 +37,7 @@ export async function GET() {
     const row = await prisma.client.findFirst({
       where: { name: 'Demo — Maria' },
       include: {
-        checkIns: { orderBy: { date: 'asc' } },
+        checkIns: { orderBy: [{ date: 'asc' }, { id: 'asc' }] },
       },
     });
 
