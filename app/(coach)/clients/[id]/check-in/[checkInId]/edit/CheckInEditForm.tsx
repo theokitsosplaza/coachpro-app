@@ -40,7 +40,7 @@ const inputBase =
   "disabled:opacity-50";
 
 const textareaBase =
-  "w-full rounded-lg border bg-background px-3 py-2.5 text-sm leading-relaxed text-foreground " +
+  "w-full rounded-lg border bg-background px-3 py-2 text-sm leading-relaxed text-foreground " +
   "placeholder:text-muted-foreground/50 transition-colors resize-y min-h-[140px] " +
   "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent " +
   "disabled:opacity-50";
@@ -134,7 +134,7 @@ export function CheckInEditForm({ clientId, clientName, checkIn, wasApproved }: 
               Changing the date re-orders this client&apos;s history and re-runs the analysis.
             </p>
           </div>
-          <div className="max-w-[220px]">
+          <div className="max-w-[180px]">
             <label htmlFor="date" className="block text-sm font-medium text-foreground mb-1.5">
               Date <span className="text-anomaly">*</span>
             </label>
@@ -258,7 +258,7 @@ export function CheckInEditForm({ clientId, clientName, checkIn, wasApproved }: 
           <div>
             <label htmlFor="clientReflection" className="block text-sm font-medium text-foreground mb-1.5">
               Paste or transcribe their own words{" "}
-              <span className="font-normal text-muted-foreground">(optional)</span>
+              <span className="font-normal text-muted-foreground/60">(optional)</span>
             </label>
             <textarea
               id="clientReflection" name="clientReflection" rows={6}
@@ -306,7 +306,7 @@ export function CheckInEditForm({ clientId, clientName, checkIn, wasApproved }: 
       </form>
 
       {/* ── Danger zone: delete (own form — forms cannot nest) ── */}
-      <div className="mt-8 rounded-xl border border-anomaly/25 bg-card p-6">
+      <div className="mt-5 rounded-xl border border-anomaly/30 bg-card p-6">
         {!confirmingDelete ? (
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -329,19 +329,21 @@ export function CheckInEditForm({ clientId, clientName, checkIn, wasApproved }: 
             <p className="text-sm font-semibold text-anomaly">
               Delete the check-in from {formattedDate}?
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               This permanently removes its numbers, the client&apos;s written
               reflection, and its AI analysis. This cannot be undone.
             </p>
             {wasApproved && (
-              <p className="text-xs text-warning">
+              <div className="rounded-lg border border-warning/30 bg-warning-muted px-4 py-3 text-sm text-warning">
                 This check-in was approved — the client&apos;s current macro targets
                 may have been set from its analysis. Deleting it will NOT revert
                 those targets or the macro history.
-              </p>
+              </div>
             )}
             {deleteErrors._form && (
-              <p className="text-xs text-anomaly">{deleteErrors._form}</p>
+              <div className="rounded-lg border border-anomaly/30 bg-anomaly/10 px-4 py-3 text-sm text-anomaly">
+                {deleteErrors._form}
+              </div>
             )}
             <div className="flex flex-wrap items-center gap-3">
               <form action={deleteAction}>

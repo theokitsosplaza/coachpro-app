@@ -35,7 +35,7 @@ const inputBase =
   "disabled:opacity-50";
 
 const textareaBase =
-  "w-full rounded-lg border bg-background px-3 py-2.5 text-sm leading-relaxed text-foreground " +
+  "w-full rounded-lg border bg-background px-3 py-2 text-sm leading-relaxed text-foreground " +
   "placeholder:text-muted-foreground/50 transition-colors resize-y min-h-[140px] " +
   "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent " +
   "disabled:opacity-50";
@@ -90,7 +90,7 @@ export function CheckInForm({ clientId, clientName, lastCheckIn }: Props) {
               (e.g. entering a client&apos;s history).
             </p>
           </div>
-          <div className="max-w-[220px]">
+          <div className="max-w-[180px]">
             <label htmlFor="date" className="block text-sm font-medium text-foreground mb-1.5">
               Date <span className="text-anomaly">*</span>
             </label>
@@ -214,7 +214,7 @@ export function CheckInForm({ clientId, clientName, lastCheckIn }: Props) {
           <div>
             <label htmlFor="clientReflection" className="block text-sm font-medium text-foreground mb-1.5">
               Paste or transcribe their own words{" "}
-              <span className="font-normal text-muted-foreground">(optional)</span>
+              <span className="font-normal text-muted-foreground/60">(optional)</span>
             </label>
             <textarea
               id="clientReflection" name="clientReflection" rows={6}
