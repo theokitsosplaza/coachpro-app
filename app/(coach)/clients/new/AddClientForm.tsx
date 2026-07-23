@@ -31,13 +31,13 @@ type Props = {
 
 function FieldError({ msg }: { msg?: string }) {
   if (!msg) return null;
-  return <p className="mt-1.5 text-xs text-anomaly">{msg}</p>;
+  return <p className="mt-1.5 text-xs text-red">{msg}</p>;
 }
 
 const inputBase =
-  "w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground " +
-  "placeholder:text-muted-foreground/50 transition-colors " +
-  "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent " +
+  "h-11 w-full rounded-[10px] border bg-bg px-3.5 text-sm text-text " +
+  "placeholder:text-muted-3 transition-colors hover:border-white/20 " +
+  "focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring " +
   "disabled:opacity-50";
 
 function collectWarnings(form: HTMLFormElement): string[] {
@@ -136,16 +136,16 @@ export function AddClientForm({ initialValues }: Props) {
     <div className="mx-auto max-w-2xl px-6 py-8">
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-[28px] font-semibold leading-none tracking-[-0.01em] text-foreground">
+          <h1 className="font-display text-[28px] font-semibold leading-none tracking-[-0.01em] text-text">
             {isEdit ? "Edit client" : "Add new client"}
           </h1>
-          <p className="mt-2.5 text-sm text-muted-foreground">
-            Required fields are marked <span className="text-anomaly">*</span>
+          <p className="mt-2.5 text-sm text-muted-2">
+            Required fields are marked <span className="text-red">*</span>
           </p>
         </div>
         <Link
           href={cancelHref}
-          className="shrink-0 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="shrink-0 text-sm text-muted-2 hover:text-text transition-colors"
         >
           ← Cancel
         </Link>
@@ -153,39 +153,39 @@ export function AddClientForm({ initialValues }: Props) {
 
       <form ref={formRef} action={formAction} onSubmit={handleSubmit} noValidate className="space-y-5">
         {errors._form && (
-          <div className="rounded-lg border border-anomaly/30 bg-anomaly/10 px-4 py-3 text-sm text-anomaly">
+          <div className="rounded-[10px] border border-[color-mix(in_oklab,var(--red)_26%,transparent)] bg-[color-mix(in_oklab,var(--red)_10%,transparent)] px-4 py-3 text-sm text-red">
             {errors._form}
           </div>
         )}
 
         {/* ── Client details ───────────────────────────────────── */}
-        <div key={formKey + "-details"} className="rounded-xl border border-border bg-card p-6 space-y-4">
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
+        <div key={formKey + "-details"} className="rounded-2xl border border-hair bg-surface p-6 space-y-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-1">
             Client details
           </h2>
 
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1.5">
-              Name <span className="text-anomaly">*</span>
+            <label htmlFor="name" className="block text-sm font-medium text-text mb-1.5">
+              Name <span className="text-red">*</span>
             </label>
             <input
               id="name" name="name" type="text" autoComplete="off"
               placeholder="e.g. Maria Papadopoulou" disabled={isPending}
               defaultValue={dv.name}
-              className={cn(inputBase, "border-border", errors.name && "border-anomaly focus:ring-anomaly/30")}
+              className={cn(inputBase, "border-hair-2", errors.name && "border-red focus-visible:ring-[color-mix(in_oklab,var(--red)_30%,transparent)]")}
             />
             <FieldError msg={errors.name} />
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="goal" className="block text-sm font-medium text-foreground mb-1.5">
-                Primary Goal <span className="text-anomaly">*</span>
+              <label htmlFor="goal" className="block text-sm font-medium text-text mb-1.5">
+                Primary Goal <span className="text-red">*</span>
               </label>
               <select
                 id="goal" name="goal" disabled={isPending}
                 defaultValue={dv.goal}
-                className={cn(inputBase, "cursor-pointer border-border", errors.goal && "border-anomaly focus:ring-anomaly/30")}
+                className={cn(inputBase, "cursor-pointer border-hair-2", errors.goal && "border-red focus-visible:ring-[color-mix(in_oklab,var(--red)_30%,transparent)]")}
               >
                 <option value="" disabled>Select…</option>
                 {GOALS.map((g) => <option key={g} value={g}>{g}</option>)}
@@ -194,13 +194,13 @@ export function AddClientForm({ initialValues }: Props) {
             </div>
 
             <div>
-              <label htmlFor="currentPhase" className="block text-sm font-medium text-foreground mb-1.5">
-                Current Phase <span className="text-anomaly">*</span>
+              <label htmlFor="currentPhase" className="block text-sm font-medium text-text mb-1.5">
+                Current Phase <span className="text-red">*</span>
               </label>
               <select
                 id="currentPhase" name="currentPhase" disabled={isPending}
                 defaultValue={dv.currentPhase}
-                className={cn(inputBase, "cursor-pointer border-border", errors.currentPhase && "border-anomaly focus:ring-anomaly/30")}
+                className={cn(inputBase, "cursor-pointer border-hair-2", errors.currentPhase && "border-red focus-visible:ring-[color-mix(in_oklab,var(--red)_30%,transparent)]")}
               >
                 <option value="" disabled>Select…</option>
                 {PHASES.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -211,12 +211,12 @@ export function AddClientForm({ initialValues }: Props) {
         </div>
 
         {/* ── Macro targets ────────────────────────────────────── */}
-        <div key={formKey + "-macros"} className="rounded-xl border border-border bg-card p-6 space-y-4">
+        <div key={formKey + "-macros"} className="rounded-2xl border border-hair bg-surface p-6 space-y-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
           <div>
-            <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-1">
               Macro targets
             </h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="mt-0.5 text-xs text-muted-2">
               The coach engine uses these to assess weekly adherence.
             </p>
           </div>
@@ -228,14 +228,14 @@ export function AddClientForm({ initialValues }: Props) {
               { id: "targetFats",    label: "Fats (g)",    placeholder: "60",  defaultVal: dv.targetFats,    error: errors.targetFats },
             ].map(({ id, label, placeholder, defaultVal, error }) => (
               <div key={id}>
-                <label htmlFor={id} className="block text-sm font-medium text-foreground mb-1.5">
-                  {label} <span className="text-anomaly">*</span>
+                <label htmlFor={id} className="block text-sm font-medium text-text mb-1.5">
+                  {label} <span className="text-red">*</span>
                 </label>
                 <input
                   id={id} name={id} type="number" min="0" step="any"
                   placeholder={placeholder} disabled={isPending}
                   defaultValue={defaultVal}
-                  className={cn(inputBase, "border-border", error && "border-anomaly focus:ring-anomaly/30")}
+                  className={cn(inputBase, "border-hair-2", error && "border-red focus-visible:ring-[color-mix(in_oklab,var(--red)_30%,transparent)]")}
                 />
                 <FieldError msg={error} />
               </div>
@@ -246,56 +246,56 @@ export function AddClientForm({ initialValues }: Props) {
         {/* ── Optional collapsible ─────────────────────────────── */}
         <details
           key={formKey + "-optional"}
-          className="group rounded-xl border border-border bg-card"
+          className="group rounded-2xl border border-hair bg-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
           open={hasOptionalValues || undefined}
         >
           <summary className="flex cursor-pointer list-none items-center justify-between px-6 py-4 [&::-webkit-details-marker]:hidden">
-            <span className="text-sm font-medium text-muted-foreground group-open:text-foreground transition-colors">
+            <span className="text-sm font-medium text-muted-2 group-open:text-text transition-colors">
               Additional details{" "}
-              <span className="text-muted-foreground/60">(optional)</span>
+              <span className="text-muted-3">(optional)</span>
             </span>
-            <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+            <ChevronDown className="h-4 w-4 text-muted-2 transition-transform group-open:rotate-180" />
           </summary>
 
-          <div className="border-t border-border px-6 pb-6 pt-4 space-y-4">
+          <div className="border-t border-hair px-6 pb-6 pt-4 space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1.5">
+                <label htmlFor="email" className="block text-sm font-medium text-text mb-1.5">
                   Email
                 </label>
                 <input id="email" name="email" type="email" autoComplete="off"
                   placeholder="client@example.com" disabled={isPending}
                   defaultValue={dv.email}
-                  className={cn(inputBase, "border-border")} />
+                  className={cn(inputBase, "border-hair-2")} />
               </div>
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-1.5">
+                <label htmlFor="phone" className="block text-sm font-medium text-text mb-1.5">
                   Phone
                 </label>
                 <input id="phone" name="phone" type="tel"
                   placeholder="+30 690 000 0000" disabled={isPending}
                   defaultValue={dv.phone}
-                  className={cn(inputBase, "border-border")} />
+                  className={cn(inputBase, "border-hair-2")} />
               </div>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="targetFiber" className="block text-sm font-medium text-foreground mb-1.5">
+                <label htmlFor="targetFiber" className="block text-sm font-medium text-text mb-1.5">
                   Target Fiber (g)
                 </label>
                 <input id="targetFiber" name="targetFiber" type="number" min="0"
                   placeholder="30" disabled={isPending}
                   defaultValue={dv.targetFiber}
-                  className={cn(inputBase, "border-border")} />
+                  className={cn(inputBase, "border-hair-2")} />
               </div>
               <div>
-                <label htmlFor="language" className="block text-sm font-medium text-foreground mb-1.5">
+                <label htmlFor="language" className="block text-sm font-medium text-text mb-1.5">
                   Language
                 </label>
                 <select
                   id="language" name="language" disabled={isPending}
                   defaultValue={dv.language}
-                  className={cn(inputBase, "cursor-pointer border-border")}
+                  className={cn(inputBase, "cursor-pointer border-hair-2")}
                 >
                   {Object.entries(LANGUAGES).map(([code, { label }]) => (
                     <option key={code} value={code}>{label}</option>
@@ -308,16 +308,16 @@ export function AddClientForm({ initialValues }: Props) {
 
         {/* ── Soft-confirm warning panel ──────────────────────── */}
         {warnings.length > 0 && (
-          <div className="rounded-xl border border-warning/40 bg-warning/10 p-4 space-y-3">
+          <div className="rounded-[10px] border border-[color-mix(in_oklab,var(--amber)_28%,transparent)] bg-[color-mix(in_oklab,var(--amber)_11%,transparent)] p-4 space-y-3">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber" />
               <div className="space-y-1">
-                <p className="text-sm font-medium text-warning">
+                <p className="text-sm font-medium text-amber">
                   Please confirm these unusual values:
                 </p>
                 <ul className="space-y-0.5">
                   {warnings.map((w, i) => (
-                    <li key={i} className="text-sm text-warning/90">• {w}</li>
+                    <li key={i} className="text-sm text-amber">• {w}</li>
                   ))}
                 </ul>
               </div>
