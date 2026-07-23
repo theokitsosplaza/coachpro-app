@@ -20,7 +20,7 @@ type ValidatedCheckIn = {
   sleepScore: number
   fatigueScore: number
   cycleAffected: boolean
-  clientReflection?: string
+  clientReflection: string
 }
 
 type ValidationResult =
@@ -28,8 +28,10 @@ type ValidationResult =
   | ValidatedCheckIn
 
 // requireReflection is opt-in so only the client portal form enforces the
-// free-text reflection. The coach-side manual-entry form shares this validator
-// and must not be forced to write the client's words on their behalf.
+// free-text reflection's PRESENCE. The coach-side manual-entry form shares this
+// validator and must not be forced to write the client's words on their behalf —
+// there the field is optional (empty is valid), but a non-empty entry is held to
+// the same minimum length so the AI never reads junk like "ok".
 type ValidateOptions = { requireReflection?: boolean }
 
 export function validateCheckInFormData(
@@ -66,12 +68,14 @@ export function validateCheckInFormData(
   if (!fatigueRaw || isNaN(fatigueScore) || fatigueScore < 1 || fatigueScore > 10)
     errors.fatigueScore = 'Enter a score from 1 to 10.'
 
-  let clientReflection: string | undefined
+  const clientReflection = ((formData.get('clientReflection') as string | null) ?? '').trim()
   if (requireReflection) {
-    clientReflection = ((formData.get('clientReflection') as string | null) ?? '').trim()
     if (clientReflection.length < MIN_REFLECTION_LENGTH)
       errors.clientReflection =
         `Please write at least ${MIN_REFLECTION_LENGTH} characters so your coach has real context.`
+  } else if (clientReflection.length > 0 && clientReflection.length < MIN_REFLECTION_LENGTH) {
+    errors.clientReflection =
+      `Add at least ${MIN_REFLECTION_LENGTH} characters, or leave it blank if the client gave no reflection.`
   }
 
   if (Object.keys(errors).length > 0) return { ok: false, errors }

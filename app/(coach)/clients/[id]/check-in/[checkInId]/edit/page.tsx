@@ -31,6 +31,7 @@ export default async function EditCheckInPage({
       sleepScore: true,
       fatigueScore: true,
       cycleAffected: true,
+      clientReflection: true,
       date: true,
     },
   })

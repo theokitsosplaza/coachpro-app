@@ -18,7 +18,7 @@ export async function updateCoachCheckIn(
   const result = validateCheckInFormData(formData)
   if (!result.ok) return result.errors
 
-  const { weight, loggedProtein, loggedCarbs, loggedFats, sleepScore, fatigueScore, cycleAffected } = result
+  const { weight, loggedProtein, loggedCarbs, loggedFats, sleepScore, fatigueScore, cycleAffected, clientReflection } = result
 
   const client = await prisma.client.findUnique({
     where: { id: clientId, coachId: coach.id },
@@ -47,6 +47,7 @@ export async function updateCoachCheckIn(
         sleepScore,
         fatigueScore,
         cycleAffected,
+        clientReflection,
         aiSynthesis: null,
         ...(wasApproved && { status: CHECK_IN_STATUS.Pending }),
       },
